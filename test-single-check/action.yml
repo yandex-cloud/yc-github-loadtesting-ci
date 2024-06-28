@@ -1,0 +1,141 @@
+name: 'Check test'
+description: |-
+  Make an assessment of a single test.
+
+inputs:
+  folder-id:
+    required: true
+    description: |-
+      ID of a folder in Yandex Cloud.
+
+  auth-key-json-base64:
+    required: false # true, if auth-key-json is not set
+    description: |-
+      BASE64 encoded authorized key string in JSON format. This setting is preferred over `auth-key-json`.
+
+      The action will perform all operations on behalf of a service account for which this authorized key was generated.
+
+      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem` and add the content of result file to GitHub secrets.
+      
+  auth-key-json:
+    required: false # true, if auth-key-json-base64 is not set
+    default: ''
+    description: |-
+      Use 'auth-key-json-base64'.
+
+      An authorized key string in JSON format.
+
+      The use of this parameter is discouraged because it can lead to unwanted logs obfuscation (see [naming your secrets](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets)).
+
+  action-log-level:
+    type: string
+    default: NOTICE
+    options: [NOTICE, INFO, DEBUG]
+    description: |-
+      Action log level.
+
+  test-id:
+    required: true
+    description: |-
+      ID of a test to be checked.
+
+  test-directory:
+    required: true
+    description: |-
+      Directory with test configuration files.
+
+outputs:
+  raw-output:
+    value: ${{ steps.output-output.outputs.res }}
+    description: |-
+      Raw stdout of a check script.
+
+  report-file:
+    value: ${{ steps.output-report-file.outputs.res }}
+    description: |-
+      Path to generated .md report file.
+
+  artifacts-dir:
+    value: ${{ steps.make-artifacts-dir.outputs.res }}
+    description: |-
+      Action artifacts directory. If needed, save it using actions/upload_artifacts.
+
+runs:
+  using: "composite"
+  steps:
+    - id: setup
+      name: setup
+      shell: bash
+      env:
+        YC_LT_AUTHORIZED_KEY_JSON: '${{ inputs.auth-key-json }}'
+        YC_LT_AUTHORIZED_KEY_JSON_BASE64: '${{ inputs.auth-key-json-base64 }}'
+        YC_LT_FOLDER_ID: '${{ inputs.folder-id }}'
+      run: |
+        $GITHUB_ACTION_PATH/../yc-setup/setup.sh
+
+    - id: make-artifacts-dir
+      name: make artifacts directory
+      shell: bash
+      run: |
+        _OUT_DIR="${{ runner.temp }}/${{ github.job }}-$((RANDOM))"
+        mkdir -p "$_OUT_DIR" || true
+        echo "res=$_OUT_DIR" >> "$GITHUB_OUTPUT"
+
+    - id: run
+      name: check
+      shell: bash
+      env:
+        YC_LT_LOG_LEVEL: "${{ inputs.action-log-level }}"
+        YC_LT_OUTPUT_DIR: '${{ steps.make-artifacts-dir.outputs.res }}'
+        YC_LT_CLI_INTERACTIVE: 0
+      run: |
+        OUT_FILE="${{ steps.make-artifacts-dir.outputs.res }}/check.txt"
+        echo "out_file=$OUT_FILE" >> "$GITHUB_OUTPUT"
+        touch "$OUT_FILE"
+
+        $GITHUB_ACTION_PATH/../_impl/test_check.sh --id "${{ inputs.test-id }}" --dir "${{ inputs.test-directory }}" > "$OUT_FILE"
+
+    - id: output-status
+      name: add check status to outputs
+      if: always()
+      shell: bash
+      run: |
+        if [[ "${{ steps.run.outcome }}" == "success" ]]; then
+          echo "res=1" >>"$GITHUB_OUTPUT"
+        else
+          echo "res=0" >>"$GITHUB_OUTPUT"
+        fi
+
+    - id: output-output
+      name: add check output to outputs
+      if: always()
+      shell: bash
+      run: |
+        {
+          echo 'res<<EOF'
+          cat "${{ steps.run.outputs.out_file }}"
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
+
+    - id: output-report-file
+      name: generate report file and add path to outputs
+      if: always()
+      shell: bash
+      run: |
+        REPORT_FILE="${{ steps.make-artifacts-dir.outputs.res }}/report.md"
+        echo "res=$REPORT_FILE" >> "$GITHUB_OUTPUT"
+        touch "$REPORT_FILE"
+
+        $GITHUB_ACTION_PATH/../_impl/test_make_check_report.sh -t \
+          "${{ inputs.test-directory }}" \
+          "${{ inputs.test-id }}" \
+          "${{ steps.output-status.outputs.res }}" \
+          "${{ steps.run.outputs.out_file }}" \
+          > "$REPORT_FILE"
+
+    - id: summary
+      name: generate summary
+      if: always()
+      shell: bash
+      run: |
+        cat "${{ steps.output-report-file.outputs.res }}" >> "$GITHUB_STEP_SUMMARY"

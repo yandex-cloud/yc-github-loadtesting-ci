@@ -1,0 +1,168 @@
+name: YC Load Testing example actions CI
+run-name: load-testing
+on:
+  - push
+  - workflow_dispatch
+env:
+  WORKFLOW_ID: ${{ github.run_id }}
+
+jobs:
+
+  # create 2 agents in cloud compute
+  #
+  create-agents:
+    name: create agents
+    runs-on: ubuntu-latest
+    outputs:
+      agent-ids: ${{ steps.create-agents.outputs.agent-ids }}
+    steps:
+      - id: create-agents
+        uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
+        with:
+          auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
+          folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
+
+          count: 2
+          service-account-id: ${{ vars.YC_LOADTESTING_AGENT_SA_ID }}
+          vm-zone: ru-central1-b
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.job }}
+          path: ${{ steps.create-agents.outputs.artifacts-dir }}
+
+  # execute 2 multitests sequentially in a single suite
+  #
+  loadtesting-suite:
+    name: 'suite: 2 multi-agent tests'
+    continue-on-error: true
+    needs:
+      - create-agents
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: run
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-suite@main
+        with:
+          auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
+          folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
+
+          test-directories: |-
+            "${{ github.workspace }}/_impl/testdata/http-const-rps-2-agents"
+            "${{ github.workspace }}/_impl/testdata/https-const-rps-2-agents"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.job }}
+          path: ${{ steps.run.outputs.artifacts-dir }}
+
+  # execute and check a single test
+  #
+  loadtesting-single-http:
+    name: '1 single-agent test (http)'
+    continue-on-error: true
+    needs:
+      - create-agents
+      - loadtesting-suite
+    runs-on: ubuntu-latest
+    env:
+      TEST_DIR: "${{ github.workspace }}/_impl/testdata/http-const-rps"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: run
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-run@main
+        with:
+          auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
+          folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
+
+          test-directory: "${{ env.TEST_DIR }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.job }}-run
+          path: ${{ steps.run.outputs.artifacts-dir }}
+
+      - id: check
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-check@main
+        with:
+          auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
+          folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
+
+          test-id: ${{ steps.run.outputs.test-id }}
+          test-directory: "${{ env.TEST_DIR }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.job }}-check
+          path: ${{ steps.check.outputs.artifacts-dir }}
+
+  # execute and check a single test
+  #
+  loadtesting-single-https:
+    name: '1 single-agent test (https)'
+    continue-on-error: true
+    needs:
+      - create-agents
+      - loadtesting-suite
+    runs-on: ubuntu-latest
+    env:
+      TEST_DIR: "${{ github.workspace }}/_impl/testdata/https-const-rps"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: run
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-run@main
+        with:
+          auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
+          folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
+
+          test-directory: "${{ env.TEST_DIR }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.job }}-run
+          path: ${{ steps.run.outputs.artifacts-dir }}
+
+      - id: check
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-check@main
+        with:
+          auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
+          folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
+
+          test-id: ${{ steps.run.outputs.test-id }}
+          test-directory: "${{ env.TEST_DIR }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.job }}-check
+          path: ${{ steps.check.outputs.artifacts-dir }}
+
+  # delete agents created in the first step
+  #
+  delete-agents:
+    name: delete agents
+    needs:
+      - create-agents
+      - loadtesting-suite
+      - loadtesting-single-http
+      - loadtesting-single-https
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - id: delete-agents
+        uses: yandex-cloud/yc-github-loadtesting-ci/agents-delete@main
+        with:
+          auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
+          folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
+
+          agent-ids: ${{ needs.create-agents.outputs.agent-ids }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.job }}
+          path: ${{ steps.delete-agents.outputs.artifacts-dir }}

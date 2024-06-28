@@ -1,0 +1,38 @@
+name: Generate README.md
+run-name: generate-readme
+on:
+  - push
+  - workflow_dispatch
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pndurette/gh-actions-auto-docs@v1
+        with:
+          action_yaml_file: ./agents-create/action.yml
+          marker_start: '<!--doc-begin-agents-create-->'
+          marker_end: '<!--doc-end-agents-create-->'
+      - uses: pndurette/gh-actions-auto-docs@v1
+        with:
+          action_yaml_file: ./agents-delete/action.yml
+          marker_start: '<!--doc-begin-agents-delete-->'
+          marker_end: '<!--doc-end-agents-delete-->'
+      - uses: pndurette/gh-actions-auto-docs@v1
+        with:
+          action_yaml_file: ./test-suite/action.yml
+          marker_start: '<!--doc-begin-test-suite-->'
+          marker_end: '<!--doc-end-test-suite-->'
+      - uses: pndurette/gh-actions-auto-docs@v1
+        with:
+          action_yaml_file: ./test-single-run/action.yml
+          marker_start: '<!--doc-begin-test-single-run-->'
+          marker_end: '<!--doc-end-test-single-run-->'
+      - uses: pndurette/gh-actions-auto-docs@v1
+        with:
+          action_yaml_file: ./test-single-check/action.yml
+          marker_start: '<!--doc-begin-test-single-check-->'
+          marker_end: '<!--doc-end-test-single-check-->'
+  

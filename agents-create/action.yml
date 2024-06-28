@@ -1,0 +1,178 @@
+name: 'Create agents'
+description: |-
+  Create agents alongside with Cloud Compute VMs to host them.
+  
+  This action is usually used used in pair with 'agents-delete' action.
+
+  SA authorized by 'auth-key-json-base64' must have following roles in 'folder-id':
+  - loadtesting.loadTester - to create an agent
+  - compute.editor - to create and start agent VM
+  - iam.serviceAccounts.user - to assign service account to agent VM
+  - vpc.user - to configure network interface on agent VM
+  - vpc.publicAdmin - to configure public IP on agent VM (the default way, may be omitted if you know what you are doing)
+
+inputs:
+  folder-id:
+    required: true
+    description: |-
+      ID of a folder in Yandex Cloud.
+
+  auth-key-json-base64:
+    required: false # true, if auth-key-json is not set
+    description: |-
+      BASE64 encoded authorized key string in JSON format. This setting is preferred over `auth-key-json`.
+
+      The action will perform all operations on behalf of a service account for which this authorized key was generated.
+
+      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem` and add the content of result file to GitHub secrets.
+      
+  auth-key-json:
+    required: false # true, if auth-key-json-base64 is not set
+    default: ''
+    description: |-
+      Use 'auth-key-json-base64'.
+
+      An authorized key string in JSON format.
+
+      The use of this parameter is discouraged because it can lead to unwanted logs obfuscation (see [naming your secrets](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets)).
+
+  action-log-level:
+    type: string
+    default: NOTICE
+    options: [NOTICE, INFO, DEBUG]
+    description: |-
+      Action log level.
+
+  count:
+    type: number
+    default: 1
+    description: |-
+      Number of agents to be created.
+
+  service-account-id:
+    type: string
+    default: ''
+    description: |-
+      ID of a service account to create agent VM with.
+
+      The service account must have 'loadtesting.generatorClient' role.
+
+  vm-zone:
+    type: string
+    default: "ru-central1-d"
+    description: |-
+      Compute zone to create agent VM in.
+
+  name-prefix:
+    type: string
+    default: "onetime-ci-agent"
+    description: |-
+      If count=0, a name of created agent.
+      if count>0, a name prefix of created agents.
+
+  description:
+    type: string
+    default: 'Create from Github Actions'
+    description: |-
+      Description of created agents.
+
+  labels:
+    type: string
+    default: 'workflow=${{ github.run_id }}'
+    description: |-
+      Labels of created agents. Format: 'key1=value1,key2=value2'.
+
+  cli-args:
+    type: string
+    default: ''
+    description: |-
+      Additional command line arguments to be passed to `yc loadtesting agent create`
+      (see `yc loadtesting agent create -h` for more details).
+      
+      Override rules:
+      * '--zone ARG' overrides 'vm-zone' input parameter
+      * '--service-account-id ARG' overrides 'service-account-id' input parameter
+      * '--network-interface' overrides default network interface settings (which is - 1-to-1 NAT (dynamic public IP) in automatically chosen subnet)
+      * '--name ARG' overrides 'name-prefix' input parameter
+      * '--description ARG' overrides 'description' input parameter
+      * '--labels' overrides 'labels' input parameter
+
+  timeout:
+    type: number
+    default: 600
+    description: |-
+      Time to wait for agents to become READY_FOR_TEST.
+
+      Usually, reaching this timeout means either missing permissions or invalid agent network settings.
+
+outputs:
+  agent-ids:
+    value: ${{ steps.output-ids.outputs.res }}
+    description: |-
+      IDs of created agents.
+
+  artifacts-dir:
+    value: ${{ steps.make-artifacts-dir.outputs.res }}
+    description: |-
+      Action artifacts directory. If needed, save it using actions/upload_artifacts.
+
+runs:
+  using: "composite"
+  steps:
+    - id: setup
+      name: setup
+      shell: bash
+      env:
+        YC_LT_AUTHORIZED_KEY_JSON: '${{ inputs.auth-key-json }}'
+        YC_LT_AUTHORIZED_KEY_JSON_BASE64: '${{ inputs.auth-key-json-base64 }}'
+        YC_LT_FOLDER_ID: '${{ inputs.folder-id }}'
+      run: |
+        $GITHUB_ACTION_PATH/../yc-setup/setup.sh
+
+    - id: make-artifacts-dir
+      name: make artifacts directory
+      shell: bash
+      run: |
+        _OUT_DIR="${{ runner.temp }}/${{ github.job }}-$((RANDOM))"
+        mkdir -p "$_OUT_DIR" || true
+        echo "res=$_OUT_DIR" >> "$GITHUB_OUTPUT"
+
+    - id: run
+      name: create agents
+      shell: bash
+      env:
+        YC_LT_AGENT_CREATE_TIMEOUT: '${{ inputs.timeout }}'
+
+        YC_LT_AGENT_SA_ID: '${{ inputs.service-account-id }}'
+        YC_LT_AGENT_ZONE: '${{ inputs.vm-zone }}'
+        YC_LT_AGENT_IPV4_ADDRESS: 'auto'
+
+        YC_LT_AGENT_NAME_PREFIX: '${{ inputs.name-prefix }}'
+        YC_LT_AGENT_DESCRIPTION: '${{ inputs.description }}'
+        YC_LT_AGENT_LABELS: '${{ inputs.labels }}'
+
+        YC_LT_LOG_LEVEL: '${{ inputs.action-log-level }}'
+        YC_LT_OUTPUT_DIR: '${{ steps.make-artifacts-dir.outputs.res }}'
+        YC_LT_CLI_INTERACTIVE: 0
+      run: |
+        set -e
+
+        echo "agent_ids_file=${{ steps.make-artifacts-dir.outputs.res }}/agent-ids" >> "$GITHUB_OUTPUT"
+        touch "${{ steps.make-artifacts-dir.outputs.res }}/agent-ids"
+
+        _ARGS=()
+        read -d '' -ra _ARGS <<< "${{ inputs.cli-args }}" || true
+        $GITHUB_ACTION_PATH/../_impl/agent_create.sh \
+          --count '${{ inputs.count }}' "${_ARGS[@]}" \
+          >> "${{ steps.make-artifacts-dir.outputs.res }}/agent-ids"
+
+    - id: output-ids
+      name: add agent ids to outputs
+      if: always()
+      shell: bash
+      run: |
+        {
+          echo 'res<<EOF'
+          cat "${{ steps.run.outputs.agent_ids_file }}"
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"

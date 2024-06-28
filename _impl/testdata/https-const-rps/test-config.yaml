@@ -1,0 +1,44 @@
+pandora:
+  enabled: true
+  package: yandextank.plugins.Pandora
+  config_content:
+    pools:
+      - id: HTTP
+        discard_overflow: true
+        gun:
+          type: http
+          target: 'example.com:80'
+          ssl: false
+        ammo:
+          type: uri
+          uris:
+            - '/'
+        startup:
+          type: once
+          times: 100
+        rps:
+          - duration: 15s
+            type: const
+            ops: 5
+
+autostop:
+  enabled: true
+  package: yandextank.plugins.Autostop
+  # force stop if:
+  autostop:
+    # 1m min passed
+    - limit(1m)
+    # for 5s, 50% of net responses are failed
+    - total_http(0, 50%, 5s)
+
+telegraf:
+  enabled: true
+  package: yandextank.plugins.Telegraf
+  config:
+    hosts:
+      localhost:
+    metrics:
+      cpu:
+      mem:
+      diskio:
+      net:
