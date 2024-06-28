@@ -1,0 +1,9 @@
+{
+    "description": "/ under load with increasing rps. until service or agent breaks.",
+    "labels": {
+        "rps": "max",
+        "type": "line",
+        "agents": "2"
+    },
+    "multi": 2
+}

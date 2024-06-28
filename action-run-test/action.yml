@@ -1,0 +1,42 @@
+name: 'Run test'
+description: 'Runs one test from directory specified in test_dir input.'
+inputs:
+  test_dir:
+    description: 'A directory with config of the test'
+    required: true
+outputs:
+  test_id:
+    description: "ID of the created test"
+    value: ${{ steps.run-test.outputs.test_id }}
+  test_dir:
+    description: ""
+    value: ${{ steps.run-test.outputs.test_dir }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: ./action-setup
+    - id: run-test
+      env:
+        INPUT_TEST_DIR: ${{ inputs.test_dir }}
+      run: |
+        set -e
+        echo "INPUT_TEST_DIR: $INPUT_TEST_DIR"
+        echo "YC_LT_DATA_BUCKET: $YC_LT_DATA_BUCKET"
+        [[ -z "$INPUT_TEST_DIR" ]] && echo "variable INPUT_TEST_DIR is empty. exit" && exit 1
+        test_id=$(automation/test_run.sh "$INPUT_TEST_DIR")
+        echo "test_id=$test_id" >> "$GITHUB_OUTPUT"
+        echo "test_dir=$INPUT_TEST_DIR" >> "$GITHUB_OUTPUT"
+      shell: bash
+    - name: generate-summary
+      if: always()
+      env:
+        TEST_ID: ${{ steps.run-test.outputs.test_id }}
+      run: |
+        link="https://console.yandex.cloud/folders/${YC_LT_FOLDER_ID}/load-testing/tests/${TEST_ID}/overview"
+        link_md="[${link}](${link})"
+        table=$(yc --format text loadtesting test get-report-table $TEST_ID)
+        echo "$link_md" >> $GITHUB_STEP_SUMMARY
+        echo -e "\`\`\` $table \n \`\`\` " >> $GITHUB_STEP_SUMMARY
+      shell: bash
+

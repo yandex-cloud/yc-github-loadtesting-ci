@@ -1,0 +1,43 @@
+#name: build
+#run-name: yc-load-testing-ci
+#on: push
+#env:
+#  YC_LT_FOLDER_ID: b1g5mqk0rkb81u1kf2d4
+#  YC_LT_AUTHORIZED_KEY_JSON: ${{ secrets.YC_LOADTESTING_CI_AUTHORIZED_KEY_JSON }}
+#  YC_LT_AGENT_SA_ID: ${{ secrets.SERVICE_ACCOUNT_ID }}
+#  YC_LT_AGENT_ZONE: ru-central1-b
+#  YC_LT_AGENT_SUBNET_ID: ${{ secrets.SUBNET_ID }}
+#  YC_LT_AGENT_SECURITY_GROUP_IDS: ${{ secrets.SECURITY_GROUP_IDS }}
+#  YC_LT_TARGET: ${{ secrets.YC_LT_TARGET }}
+#  YC_LT_DATA_BUCKET: ${{ secrets.YC_LT_DATA_BUCKET }}
+#  YC_LT_SKIP_TEST_CHECK: "0"
+#  YC_LT_TEST_AGENT_FILTER: "labels.workflow = '${{github.run_id}}'"
+#  YC_LT_TEST_EXTRA_DESCRIPTION: "GitHub Actions workflow - ${{github.run_id}}"
+#  WORKFLOW_ID: ${{github.run_id}}
+#jobs:
+#  generate-matrix:
+#    runs-on: ubuntu-latest
+#    outputs:
+#      matrix: ${{ steps.set-matrix.outputs.matrix }}
+#    steps:
+#      - id: set-matrix
+#        run: echo "matrix={\"test\":[\"root-const\",\"smoke\"]}" >> $GITHUB_OUTPUT
+#  run-test:
+#    needs: generate-matrix
+#    runs-on: ubuntu-latest
+#    strategy:
+#      max-parallel: 1
+#      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+#    steps:
+#      - run: |
+#          echo "Matrix - test ${{ matrix.test }}"
+#          echo "Running test ${{ matrix.test }}"
+#          test_name=${{ matrix.test }}
+#          echo "Running test from var test_name = ${test_name}"
+#  check:
+#    needs: [generate-matrix, run-test]
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+#    steps:
+#      - run: echo "CHECK - test ${{ matrix.test }}"

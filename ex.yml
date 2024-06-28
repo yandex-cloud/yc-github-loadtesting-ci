@@ -1,0 +1,29 @@
+name: build
+on: push
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: echo "matrix={\"test\":[\"root-const\",\"smoke\"]}" >> $GITHUB_OUTPUT
+  run-test:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    steps:
+      - run: |
+          echo "Matrix - test ${{ matrix.test }}"
+          echo "Running test ${{ matrix.test }}"
+          test_name=${{ matrix.test }}
+          echo "Running test from var test_name = ${test_name}"
+  check:
+    needs: [generate-matrix, run-test]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+    steps:
+      - run: echo "CHECK - test ${{ matrix.test }}"

@@ -1,0 +1,55 @@
+core:
+  # enable to get more logs on agent
+  debug: false 
+
+autostop:
+  enabled: true
+  package: yandextank.plugins.Autostop
+  autostop:
+    # force stop if:
+
+    - limit(10s)
+    # for 5s, 10% of requests failed due to generator overload
+    - total_net(777, 10%, 5s)
+    # for 5s, 50% of net requests failed
+    - total_http(0, 50%, 5s)
+    # for 20s, each second, 20% of http requests failed
+    - negative_http(2xx, 20%, 20s)
+
+pandora:
+  enabled: true
+  package: yandextank.plugins.Pandora
+  config_content:
+    pools:
+      - id: HTTP
+        discard_overflow: true
+        gun:
+          type: http
+          target: '${YC_LT_TARGET}:80'
+          ssl: false
+        ammo:
+          type: uri
+          uris:
+            - '/ root'
+        startup:
+          type: once
+          times: 1000
+        rps:
+          - duration: 20s
+            type: const
+            ops: 100
+
+telegraf:
+  enabled: true
+  package: yandextank.plugins.Telegraf
+  config:
+    hosts:
+      localhost:
+    metrics:
+      cpu:
+      mem:
+      diskio:
+      net:
+      netstat:
+      system:
+      kernel:

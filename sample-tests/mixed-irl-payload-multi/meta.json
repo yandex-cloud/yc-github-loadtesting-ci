@@ -1,0 +1,13 @@
+{
+    "description": "const mid-level rps load of mixed requests. requests and data are based on real prod user load. one agent simulates free user, second agent simulates premium user",
+    "labels": {
+        "rps": "mid",
+        "type": "const",
+        "agents": "2"
+    },
+    "multi": 1,
+    "external_data": [
+        {"name": "_requests-free.uri", "s3bucket": "secure-bucket", "s3file": "requests-snapshot-free.uri"},
+        {"name": "_requests-premium.uri", "s3bucket": "secure-bucket", "s3file": "requests-snapshot-premium.uri"}
+    ]
+}

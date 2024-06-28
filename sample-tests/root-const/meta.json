@@ -1,0 +1,8 @@
+{
+    "description": "/ under load with constant mid-level rps",
+    "labels": {
+        "rps": "mid",
+        "type": "const",
+        "agents": "1"
+    }
+}

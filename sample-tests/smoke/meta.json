@@ -1,0 +1,8 @@
+{
+    "description": "Simple test - low rps with const load. ALARM if it fails!",
+    "labels": {
+        "rps": "low",
+        "type": "const",
+        "agents": "1"
+    }
+}
