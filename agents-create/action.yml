@@ -1,0 +1,16 @@
+name: 'Create agent'
+description: ''
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+    - uses: ./yc-setup
+    - name: create agent
+      run: |
+        set -e
+        _impl/agent_create.sh --count $AGENTS_COUNT \
+          --description "CI agent" \
+          --labels "workflow=${WORKFLOW_ID}"
+      shell: bash
+
+
