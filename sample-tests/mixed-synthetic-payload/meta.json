@@ -1,9 +1,0 @@
-{
-    "description": "const mid-level rps load of mixed requests. requests and data are hand-crafted",
-    "labels": {
-        "rps": "mid",
-        "type": "const",
-        "agents": "2"
-    },
-    "multi": 2
-}
