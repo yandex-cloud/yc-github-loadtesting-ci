@@ -35,6 +35,19 @@ function _def_var {
 # Scripts verbosity level
 _def_var VERBOSE "0"
 
+# env: YC_LT_LOG_LEVEL
+# format: NOTICE, INFO, DEBUG
+# Same as YC_LT_VERBOSE (0, 1 , 2)
+_def_var LOG_LEVEL "NOTICE"
+
+if [[ -n $VAR_LOG_LEVEL ]]; then
+    case "$VAR_LOG_LEVEL" in
+    NOTICE | notice | 0) VAR_VERBOSE=0 ;;
+    INFO | info | 1) VAR_VERBOSE=1 ;;
+    DEBUG | debug | 2) VAR_VERBOSE=2 ;;
+    esac
+fi
+
 # env: YC_LT_OUTPUT_DIR
 # format: path to local directory
 _def_var OUTPUT_DIR "$PWD/.loadtesting"
@@ -55,6 +68,12 @@ _def_var FOLDER_ID ""
 # Name of an object storage bucket used as a storage for test data. If needed,
 # local files are automatically uploaded to the bucket.
 _def_var DATA_BUCKET ""
+
+# env: YC_LT_ARTIFACTS_BUCKET
+# format: string, bucket-name
+# Name of an object storage bucket used as a storage for test artifacts. If needed,
+# local files are automatically uploaded to the bucket.
+_def_var ARTIFACTS_BUCKET ""
 
 # env: YC_LT_CLI_INTERACTIVE
 # format: 0 or 1
@@ -95,12 +114,12 @@ _def_var AGENT_SUBNET_ID ""
 # env: YC_LT_AGENT_IPV4_ADDRESS
 # format: auto or ipv4 address
 # IPV4 address of a VM.
-_def_var AGENT_IPV4_ADDRESS ""
+_def_var AGENT_IPV4_ADDRESS "auto"
 
 # env: YC_LT_AGENT_SUBNET_NAME
 # format: string
 # Name of a subnet in which agent's VM will be created
-_def_var AGENT_SUBNET_NAME "default-net-$VAR_AGENT_ZONE"
+_def_var AGENT_SUBNET_NAME ""
 
 # env: YC_LT_AGENT_SECURITY_GROUP_IDS
 # format: list of cloud-id in format [id[,id[,...]]]

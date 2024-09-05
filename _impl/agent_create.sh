@@ -1,55 +1,39 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/_source.sh"
 
+function _help() {
+    cat <<EOF
+Usage: $(basename "$0") [--count N] [ARG]...
+
+Create N (default = 1) agents and wait until they are READY_FOR_TEST
+
+Provided arguments are passed to 'yc loadtesting agent create [ARG]...' as is.
+If missing, some argument values are defaulted YC_LT_* environment variables.
+EOF
+}
+
 # ---------------------------------------------------------------------------- #
 #                     Retrieve arguments from command line                     #
 # ---------------------------------------------------------------------------- #
 
-_NO_NET=
-_NET=""
-if [[ -n $VAR_AGENT_SECURITY_GROUP_IDS ]]; then _NET+=",security-group-ids=$VAR_AGENT_SECURITY_GROUP_IDS"; fi
-if [[ -n $VAR_AGENT_IPV4_ADDRESS ]]; then _NET+=",ipv4-address=$VAR_AGENT_IPV4_ADDRESS,nat-ip-version=ipv4"; fi
-if [[ -n $VAR_AGENT_SUBNET_ID ]]; then _NET+=",subnet-id=$VAR_AGENT_SUBNET_ID";
-elif [[ -n $VAR_AGENT_SUBNET_NAME ]]; then _NET+=",subnet-name=$VAR_AGENT_SUBNET_NAME"; fi
-_NET=${_NET#","}
-
 _log "$@"
+
+_AGENT_NAME=
+_ZONE=
 
 _ARGS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
-    -h | --help)
-        echo "Usage: $(basename "$0") [--count N] [ARG]..."
-        echo ""
-        echo "Create N (default = 1) agents and wait until they are READY_FOR_TEST"
-        echo ""
-        echo "Provided arguments are passed to 'yc loadtesting agent create [ARG]...' as is."
-        echo "If missing, some argument values are defaulted YC_LT_* environment variables."
-        exit 0
-        ;;
+    -h | --help) _help && exit 0 ;;
     --count) VAR_AGENTS_CNT=$2 && shift 2 ;;
-    --service-account-id) VAR_AGENT_SA_ID=$2 && shift 2 ;;
     --name) _AGENT_NAME=$2 && shift 2 ;;
-    --description) VAR_AGENT_DESCRIPTION=$2 && shift 2 ;;
-    --labels) VAR_AGENT_LABELS=$2 && shift 2 ;;
-    --zone) VAR_AGENT_ZONE=$2 && shift 2 ;;
-    --cores) VAR_AGENT_CORES=$2 && shift 2 ;;
-    --memory) VAR_AGENT_MEMORY=$2 && shift 2 ;;
-    --public-ip) _NO_NET=1 && _ARGS+=("$1") && shift 1 ;;
-    --public-ip-address) _NO_NET=1 && _ARGS+=("$1" "$2") && shift 2 ;;
-    --network-interface) _NET=$2 && shift 2 ;;
+    --zone) _ZONE=$2 && _ARGS+=("$1" "$2") && shift 2 ;;
     --) shift 1 ;;
     *) _ARGS+=("$1") && shift 1 ;;
     esac
 done
 
 _log_stage "[PREPARE]"
-
-assert_not_empty VAR_AGENT_SA_ID
-if [[ -z $_NO_NET && -z $_NET ]]; then
-    _log "Network settings not specified. Either public ip or subnet must be specified"
-    exit 1
-fi
 
 if [[ -z "$_AGENT_NAME" ]]; then
     _AGENT_NAME="$VAR_AGENT_NAME_PREFIX"
@@ -71,26 +55,93 @@ fi
 #                         Compose command line options                         #
 # ---------------------------------------------------------------------------- #
 
+function _contains() {
+    _needle=$1 && shift 1
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+        "$_needle") return 0 ;;
+        *) shift 1 ;;
+        esac
+    done
+    return 1
+}
+
 if [[ -n $VAR_AGENT_SA_ID ]]; then
-    _ARGS+=(--service-account-id "$VAR_AGENT_SA_ID")
+    if _contains --service-account-id "${_ARGS[@]}"; then
+        _log "Ignoring env AGENT_SA_ID (=$VAR_AGENT_SA_ID): overriden by --service-account-id"
+    elif _contains --service-account-name "${_ARGS[@]}"; then
+        _log "Ignoring env AGENT_SA_ID (=$VAR_AGENT_SA_ID): overriden by --service-account-name"
+    else
+        _ARGS+=(--service-account-id "$VAR_AGENT_SA_ID")
+    fi
 fi
+
 if [[ -n $VAR_AGENT_DESCRIPTION ]]; then
-    _ARGS+=(--description "$VAR_AGENT_DESCRIPTION")
+    if _contains --description "${_ARGS[@]}"; then
+        _log "Ignoring env AGENT_DESCRIPTION (=$VAR_AGENT_DESCRIPTION): overriden by --description"
+    else
+        _ARGS+=(--description "$VAR_AGENT_DESCRIPTION")
+    fi
 fi
+
 if [[ -n $VAR_AGENT_LABELS ]]; then
-    _ARGS+=(--labels "$VAR_AGENT_LABELS")
+    if _contains --labels "${_ARGS[@]}"; then
+        _log "Ignoring env AGENT_LABELS (=$VAR_AGENT_LABELS): overriden by --labels"
+    else
+        _ARGS+=(--labels "$VAR_AGENT_LABELS")
+    fi
 fi
+
 if [[ -n $VAR_AGENT_ZONE ]]; then
-    _ARGS+=(--zone "$VAR_AGENT_ZONE")
+    if _contains --zone "${_ARGS[@]}"; then
+        _log "Ignoring env AGENT_ZONE (=$VAR_AGENT_ZONE): overriden by --zone"
+    else
+        _ARGS+=(--zone "$VAR_AGENT_ZONE")
+    fi
 fi
+
 if [[ -n $VAR_AGENT_CORES ]]; then
-    _ARGS+=(--cores "$VAR_AGENT_CORES")
+    if _contains --cores "${_ARGS[@]}"; then
+        _log "Ignoring env AGENT_CORES (=$VAR_AGENT_CORES): overriden by --cores"
+    else
+        _ARGS+=(--cores "$VAR_AGENT_CORES")
+    fi
 fi
+
 if [[ -n $VAR_AGENT_MEMORY ]]; then
-    _ARGS+=(--memory "$VAR_AGENT_MEMORY")
+    if _contains --memory "${_ARGS[@]}"; then
+        _log "Ignoring env AGENT_MEMORY (=$VAR_AGENT_MEMORY): overriden by --memory"
+    else
+        _ARGS+=(--memory "$VAR_AGENT_MEMORY")
+    fi
 fi
-if [[ -z $_NO_NET && -n $_NET ]]; then
-    _ARGS+=(--network-interface "$_NET")
+
+_NET=""
+if [[ -n $VAR_AGENT_SECURITY_GROUP_IDS ]]; then _NET+=",security-group-ids=$VAR_AGENT_SECURITY_GROUP_IDS"; fi
+if [[ -n $VAR_AGENT_IPV4_ADDRESS ]]; then _NET+=",ipv4-address=$VAR_AGENT_IPV4_ADDRESS,nat-ip-version=ipv4"; fi
+if [[ -n $VAR_AGENT_SUBNET_ID ]]; then
+    _NET+=",subnet-id=$VAR_AGENT_SUBNET_ID"
+elif [[ -n $VAR_AGENT_SUBNET_NAME ]]; then
+    _NET+=",subnet-name=$VAR_AGENT_SUBNET_NAME"
+else
+    _ZONE=${_ZONE:-${VAR_AGENT_ZONE}}
+    _ZONE=${_ZONE:-$(yc_ config get compute-default-zone)}
+    if [[ -n "$_ZONE" ]]; then
+        _SUBNET_ID=$(yc_ vpc subnet list | jq -r "[.[] | select(.zone_id == \"$_ZONE\")] | first | .id // \"\"")
+        _log "Looking for subnets in $_ZONE. Found: $_SUBNET_ID"
+        if [[ -n "$_SUBNET_ID" ]]; then
+            _NET+=",subnet-id=$_SUBNET_ID"
+        fi
+    fi
+fi
+_NET=${_NET#","}
+
+if [[ -n $_NET ]]; then
+    if _contains --network-interface "${_ARGS[@]}"; then
+        _log "Ignoring env agent net settings (=$_NET): overriden by --network-interface"
+    else
+        _ARGS+=(--network-interface "$_NET")
+    fi
 fi
 
 # ---------------------------------------------------------------------------- #
@@ -115,7 +166,7 @@ for _i in $(seq 1 "$VAR_AGENTS_CNT"); do
 
     _name="$(_generate_name)"
     _logv 1 "Creating $_name..."
-    if ! _op=$(yc_lt agent create --async --name "$_name" "${_ARGS[@]}"); then
+    if ! _op=$(yc_lt agent create --async "${_ARGS[@]}" --name "$_name"); then
         _log "Creation failed: $_name"
         exit 1
     fi
@@ -148,7 +199,7 @@ _failed_iterations=0
 _elapsed=0
 _ts_start=$(date +%s)
 while ((_elapsed < _TIMEOUT)); do
-    ((_iteration += 1))
+    _iteration+=1
     _ts=$(date +%s)
     _elapsed=$((_ts - _ts_start))
     _log_stage "[${_elapsed}s]" "[$_ready/$VAR_AGENTS_CNT]"
@@ -159,7 +210,7 @@ while ((_elapsed < _TIMEOUT)); do
             _log "ERROR: aborting due to $_failed_iterations subsequent failed attempts to check statuses"
             exit 1
         else
-            ((_failed_iterations += 1))
+            _failed_iterations+=1
             sleep "$_TICK"
             continue
         fi
@@ -167,7 +218,7 @@ while ((_elapsed < _TIMEOUT)); do
         _failed_iterations=0
     fi
 
-    if (( VAR_AGENTS_CNT == 1 )); then
+    if ((VAR_AGENTS_CNT == 1)); then
         _agents=$(jq '[.]' <<<"$_agents")
     fi
 

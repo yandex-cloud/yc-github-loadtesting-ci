@@ -8,6 +8,10 @@ else
     export _LOG_STAGE=()
 fi
 
+function _log_stage_str {
+    printf '%s' "${_LOG_STAGE[@]}"
+}
+
 function _log_push_stage {
     local _st
     for _st in "$@"; do
@@ -41,18 +45,22 @@ function _log_stage {
 }
 
 function _log {
+    local _printfile=
     if [[ "$1" == '-f' ]]; then
+        _printfile=1
         shift
-        (
-            IFS=
-            echo >&2 "${_LOG_STAGE[*]}:" && cat >&2 "$@"
-        )
-    else
-        (
-            IFS=
-            echo >&2 "${_LOG_STAGE[*]}:" "$@"
-        )
     fi
+
+    local _msg=
+    while [[ $# -gt 0 ]]; do
+        if [[ -n "$_printfile" ]]; then
+            _msg=$(cat "$1")
+        else
+            _msg=$1
+        fi
+        printf >&2 "%s: %s\n" "$(_log_stage_str)" "$_msg"
+        shift
+    done
 }
 
 function _logv {
@@ -110,6 +118,60 @@ function run_script {
     /usr/bin/env bash -- "$@"
 }
 
+# https://stackoverflow.com/a/59592881
+# SYNTAX:
+#   _capture STDOUT_VARIABLE STDERR_VARIABLE COMMAND [ARG1[ ARG2[ ...[ ARGN]]]]
+function _capture() {
+    {
+        IFS=$'\n' read -r -d '' "${1}"
+        IFS=$'\n' read -r -d '' "${2}"
+        (
+            IFS=$'\n' read -r -d '' _ERRNO_
+            return ${_ERRNO_}
+        )
+    } < <(
+        (printf '\0%s\0%d\0' "$(
+            (
+                (
+                    (
+                        {
+                            shift 2
+                            "${@}"
+                            echo "${?}" 1>&3-
+                        } |
+                            tr -d '\0' 1>&4-
+                    ) 4>&2- 2>&1- |
+                        tr -d '\0' 1>&4-
+                ) 3>&1- |
+                    exit "$(cat)"
+            ) 4>&1-
+        )" "${?}" 1>&2) 2>&1
+    )
+}
+
+function _log_outs() {
+    local _stdout=
+    local _stderr=
+    if _capture _stdout _stderr "$@"; then
+        local _rc=0
+        local _level=2
+    else
+        local _rc=$?
+        local _level=0
+    fi
+
+    if [[ -n "$YC_SECRET_OUTPUT" ]]; then
+        _stdout='***SECRET***'
+    fi
+
+    _logv "$_level" "Command $1 finished with status $_rc:"
+    _logv "$_level" "  stderr: $_stderr"
+    _logv "$_level" "  stdout: $_stdout"
+
+    printf '%s' "$_stdout" 2>/dev/null
+    return ${_rc}
+}
+
 function yc_ {
     local _no_browser=()
     local _profile=()
@@ -138,14 +200,14 @@ function yc_ {
     _opts+=("${_profile[@]}")
     _opts+=("${_folder_id[@]}")
     _opts+=("${_format[@]}")
-    _logv 2 "Calling yc ${_opts[*]}"
+    _logv 2 "Calling yc $(printf ' \"%s\"' "${_opts[@]}")"
 
-    yc "${_token[@]}" "${_opts[@]}"
+    _log_outs yc "${_token[@]}" "${_opts[@]}"
     return $?
 }
 
 function yc_get_token {
-    yc_ --format text iam create-token || true
+    YC_SECRET_OUTPUT=1 yc_ --format text iam create-token || true
     return 0
 }
 

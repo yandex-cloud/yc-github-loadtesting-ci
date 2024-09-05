@@ -50,7 +50,7 @@ export -f check_json_val
 rc=0
 
 if ! yc_test_download_json_results "$_TEST_ID" "$_OUTPUT_DIR"; then
-    echo "ERROR: failed to download test results"
+    _log "ERROR: failed to download test results"
     exit 1
 fi
 
@@ -59,19 +59,19 @@ fi
 
 export _DEFAULT_CHECK="$_SCRIPT_DIR/default_check_summary.sh"
 if [[ -f "$_TEST_DIR/check_summary.sh" ]]; then
-    echo "Running: $_TEST_DIR/check_summary.sh $_OUTPUT_DIR/summary.json"
+    _log "Running: $_TEST_DIR/check_summary.sh $_OUTPUT_DIR/summary.json"
     if ! /usr/bin/env bash "$_TEST_DIR/check_summary.sh" "$_OUTPUT_DIR/summary.json"; then
         rc=1
     fi
 
 elif [[ -f "$_DEFAULT_CHECK" ]]; then
-    echo "Running: $_DEFAULT_CHECK $_OUTPUT_DIR/summary.json"
+    _log "Running: $_DEFAULT_CHECK $_OUTPUT_DIR/summary.json"
     if ! /usr/bin/env bash "$_DEFAULT_CHECK" "$_OUTPUT_DIR/summary.json"; then
         rc=1
     fi
 
 else
-    echo "ERROR: check_summary.sh script not found"
+    _log "ERROR: check_summary.sh script not found"
     rc=1
 fi
 
@@ -80,19 +80,19 @@ fi
 
 export _DEFAULT_CHECK="$_SCRIPT_DIR/default_check_report.sh"
 if [[ -f "$_TEST_DIR/check_report.sh" ]]; then
-    echo "Running: $_TEST_DIR/check_report.sh $_OUTPUT_DIR/report.json"
+    _log "Running: $_TEST_DIR/check_report.sh $_OUTPUT_DIR/report.json"
     if ! /usr/bin/env bash "$_TEST_DIR/check_report.sh" "$_OUTPUT_DIR/report.json"; then
         rc=1
     fi
 
 elif [[ -f "$_DEFAULT_CHECK" ]]; then
-    echo "Running: $_DEFAULT_CHECK $_OUTPUT_DIR/report.json"
+    _log "Running: $_DEFAULT_CHECK $_OUTPUT_DIR/report.json"
     if ! /usr/bin/env bash "$_DEFAULT_CHECK" "$_OUTPUT_DIR/report.json"; then
         rc=1
     fi
 
 else
-    echo "ERROR: check_summary.sh script not found"
+    _log "ERROR: check_summary.sh script not found"
     rc=1
 fi
 

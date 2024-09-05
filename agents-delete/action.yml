@@ -1,11 +1,82 @@
-name: 'Run test'
-description: ''
+name: 'Delete agents'
+description: |-
+  Delete agents with ids specified in 'agent-ids' parameter. Normally, used in pair with 'agents-create' action.
+
+inputs:
+  auth-key-json:
+    required: false
+    description: |-
+      An authorized key string in JSON format.
+
+      NOTE: to prevent some actions output issues, it is highly recommended to use base64 encoded version.
+
+  auth-key-json-base64:
+    required: false
+    description: |-
+      BASE64 encoded authorized key string in JSON format.
+
+      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem`
+      and add the content of result file to GitHub secrets.
+
+  folder-id:
+    required: true
+    description: |-
+      ID of a folder in Yandex Cloud.
+
+  agent-ids:
+    required: true
+    description: |-
+      A string containing whitespace-separated list of agents to be deleted.
+
+      Normally, should be used with conjunction with `agents-create.outputs.agent-ids`.
+
+  action-log-level:
+    type: string
+    default: NOTICE
+    options:
+      - NOTICE
+      - INFO
+      - DEBUG
+    description: |-
+      Action log level.
+
+outputs:
+  artifacts-dir:
+    value: ${{ steps.make-artifacts-dir.outputs.res }}
+    description: |-
+      Action artifacts directory. If needed, save it using actions/upload_artifacts.
+
 runs:
   using: "composite"
   steps:
-    - uses: ./yc-setup
-    - name: delete agents
+    - id: setup
+      name: setup
+      shell: bash
+      env:
+        YC_LT_AUTHORIZED_KEY_JSON: '${{ inputs.auth-key-json }}'
+        YC_LT_AUTHORIZED_KEY_JSON_BASE64: '${{ inputs.auth-key-json-base64 }}'
+        YC_LT_FOLDER_ID: '${{ inputs.folder-id }}'
+      run: |
+        $GITHUB_ACTION_PATH/../yc-setup/setup.sh
+
+    - id: make-artifacts-dir
+      name: make artifacts directory
+      shell: bash
+      run: |
+        _OUT_DIR="${{ runner.temp }}/${{ github.job }}-$((RANDOM))"
+        mkdir -p "$_OUT_DIR" || true
+        echo "res=$_OUT_DIR" >> "$GITHUB_OUTPUT"
+
+    - id: run
+      name: delete agents
+      shell: bash
+      env:
+        YC_LT_LOG_LEVEL: ${{ inputs.action-log-level }}
+        YC_LT_OUTPUT_DIR: '${{ steps.make-artifacts-dir.outputs.res }}'
+        YC_LT_CLI_INTERACTIVE: 0
       run: |
         set -e
-        _impl/agent_delete.sh --labels "workflow=${WORKFLOW_ID}"
-      shell: bash
+
+        _AGENT_IDS=()
+        read -d '' -ra _AGENT_IDS <<< "${{ inputs.agent-ids }}" || true
+        $GITHUB_ACTION_PATH/../_impl/agent_delete.sh "${_AGENT_IDS[@]}"

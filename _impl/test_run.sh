@@ -30,7 +30,7 @@ _log_push_stage "[ENTER]"
 
 assert_not_empty _TEST_DIR
 
-_ERROR_FILE=${_ERROR_FILE:-"${VAR_OUTPUT_DIR}/run-error.txt"}
+_ERROR_FILE=${_ERROR_FILE:-"${VAR_OUTPUT_DIR}/run-error.log"}
 mkdir -p "$(dirname "$_ERROR_FILE")" || true
 touch "$_ERROR_FILE"
 
@@ -41,6 +41,10 @@ touch "$_OUT_FILE"
 _TEMP_BUCKET_DIR="test-runs/$(rand_str)"
 declare -r _TEMP_BUCKET_DIR
 
+function _tee_err {
+    tee -a "$_ERROR_FILE" >&2
+}
+
 # ---------------------------------------------------------------------------- #
 #                   sanity check, before anything is created                   #
 # ---------------------------------------------------------------------------- #
@@ -48,13 +52,14 @@ declare -r _TEMP_BUCKET_DIR
 _logv 1 "Sanity check..."
 
 if [[ ! -d "$_TEST_DIR" ]]; then
-    _log 2> >(tee -a "$_ERROR_FILE" >&2) "ERROR!!! No such directory: $_TEST_DIR"
+    _log 2> >(_tee_err) "ERROR!!! No such directory: $_TEST_DIR"
     exit 1
 fi
 
 _logv 2 "Check arguments composer with dummy params..."
 run_script "$_SCRIPT_DIR/_compose_test_create_args.sh" \
     --meta "$_TEST_DIR/meta.json" \
+    --artifacts-bucket '' \
     -c 12345 \
     -c 54321 \
     -d local1 inbucket1 bucket1 \
@@ -77,7 +82,7 @@ while IFS= read -d '' -r _file; do _config_files+=("$_file"); done < \
     <(find "$_TEST_DIR" -type f -name "$VAR_TEST_CONFIG_MASK" -maxdepth 1 -print0)
 
 if [[ ${#_config_files[@]} -eq 0 ]]; then
-    _log 2> >(tee -a "$_ERROR_FILE" >&2) "ERROR!!! No config files found in $_TEST_DIR. Config file mask: $VAR_TEST_CONFIG_MASK"
+    _log 2> >(_tee_err) "ERROR!!! No config files found in $_TEST_DIR. Config file mask: $VAR_TEST_CONFIG_MASK"
     exit 1
 fi
 
@@ -89,19 +94,7 @@ _log_stage "[CONFIG_FILES][UPLOAD]"
 _logv 1 "Uploading..."
 
 for _file in "${_config_files[@]}"; do
-    _args=()
-
-    # substitute YC_LT_TARGET in config file if the variable is set
-    if [[ -n $YC_LT_TARGET ]]; then
-        _config_content=$(cat "$_file")
-        # shellcheck disable=SC2016
-        _config_content=${_config_content/'${YC_LT_TARGET}'/"$YC_LT_TARGET"}
-        _args+=(--yaml-string "$_config_content")
-    else
-        _args+=(--from-yaml-file "$_file")
-    fi
-
-    _config_id=$(yc_lt test-config create "${_args[@]}" | jq -r '.id')
+    _config_id=$(yc_lt test-config create --from-yaml-file "$_file" | jq -r '.id')
     _logv 1 "Uploaded: $_file (id=$_config_id)"
 
     _config_ids+=("$_config_id")
@@ -180,7 +173,7 @@ if [[ ${#_local_data_files[@]} -gt 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------- #
-#                           Determine test parameters                          #
+#                           Compose create test arguments                      #
 # ---------------------------------------------------------------------------- #
 
 _log_stage "[EXEC][COMPOSE_ARGS]"
@@ -197,6 +190,9 @@ done
 for _fname in "${_local_data_fnames[@]}"; do
     _composer_args+=(-d "$_fname" "$_TEMP_BUCKET_DIR/$_fname" "$VAR_DATA_BUCKET")
 done
+if [[ -n $VAR_ARTIFACTS_BUCKET ]]; then
+    _composer_args+=(--artifacts-bucket "${VAR_ARTIFACTS_BUCKET}")
+fi
 
 if ! _composer_output=$(run_script "$_SCRIPT_DIR/_compose_test_create_args.sh" "${_composer_args[@]}"); then
     _log "Failed: output=$_composer_output"
@@ -204,9 +200,6 @@ fi
 
 _test_create_args=()
 IFS=$'\t' read -d '' -ra _test_create_args <<<"$_composer_output" || true
-
-_test_create_args+=(--artifacts-output-bucket loadtesting-artifacts-lt)
-_test_create_args+=(--artifacts "include=*")
 
 _logv 1 "Composed: ${_test_create_args[*]}"
 
@@ -217,9 +210,9 @@ _logv 1 "Composed: ${_test_create_args[*]}"
 _log_stage "[EXEC][REQUEST_START]"
 _logv 1 "Starting..."
 
-if ! _test=$(yc_lt test create "${_test_create_args[@]}"); then 
+if ! _test=$(yc_lt test create "${_test_create_args[@]}" 2> >(_tee_err)); then
 
-    _log -f <<EOF 2> >(tee -a "$_ERROR_FILE" >&2)
+    _log -f <<EOF 2> >(_tee_err)
 ERROR!!! Failed to start a test
 Create output: $_test
 EOF
@@ -241,9 +234,9 @@ echo "$_test_id"
 
 _log_stage "[EXEC][WAIT]"
 _logv 1 "Waiting until finished..."
-if ! _test=$(yc_lt test wait --idle-timeout 60s "$_test_id"); then
+if ! _test=$(yc_lt test wait --idle-timeout 60s "$_test_id" 2> >(_tee_err)); then
 
-    _log -f <<EOF 2> >(tee -a "$_ERROR_FILE" >&2)
+    _log -f <<EOF 2> >(_tee_err)
 ERROR!!! Failed to wait until the test has completed.
 Wait output: $_test
 EOF
@@ -261,19 +254,19 @@ _log_stage "[STATUS_CHECK]"
 _logv 1 "Checking status..."
 
 _test_status=$(jq -r '.summary.status' <<<"$_test")
-_test_error=$(jq -r '.summary.error // ""'<<<"$_test")
+_test_error=$(jq -r '.summary.error // ""' <<<"$_test")
 
 _rc=0
 if [[ "$_test_status" == "FAILED" ]]; then
-    _log 2> >(tee -a "$_ERROR_FILE" >&2) "FAILED: the test finished with failed status"
+    _log 2> >(_tee_err) "FAILED: the test finished with failed status"
     _rc=1
 elif [[ "$_test_status" == "STOPPED" ]]; then
-    _log 2> >(tee -a "$_ERROR_FILE" >&2) "FAILED: someone has stopped the test"
+    _log 2> >(_tee_err) "FAILED: someone has stopped the test"
     _rc=1
 fi
 
 if [[ -n "$_test_error" ]]; then
-    _log 2> >(tee -a "$_ERROR_FILE" >&2) "Reported error: $_test_error"
+    _log 2> >(_tee_err) "Reported error: $_test_error"
 fi
 
 _log_stage ""
@@ -284,7 +277,7 @@ _log "STATUS: $_test_status"
 _log "ID: $_test_id"
 
 # write results to out file
-cat <<EOF > "$_OUT_FILE"
+cat <<EOF >"$_OUT_FILE"
 {
     "local_directory": "$_TEST_DIR",
     "id": "$_test_id",

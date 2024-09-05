@@ -1,16 +1,158 @@
-name: 'Create agent'
-description: ''
+name: 'Create agents'
+description: |-
+  Create agents with given parameters. Normally, used in pair with 'agents-delete' action.
+
+  Please, refer to `yc loadtesting agent create -h` for more information about accepted parameters.
+
+inputs:
+  auth-key-json:
+    required: false
+    description: |-
+      An authorized key string in JSON format.
+
+      NOTE: to prevent some actions output issues, it is highly recommended to use base64 encoded version.
+
+  auth-key-json-base64:
+    required: false
+    description: |-
+      BASE64 encoded authorized key string in JSON format.
+
+      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem`
+      and add the content of result file to GitHub secrets.
+
+  folder-id:
+    required: true
+    description: |-
+      ID of a folder in Yandex Cloud.
+
+  timeout:
+    type: number
+    default: 600
+    description: |-
+      A timeout to wait for agents to become READY_FOR_TEST
+
+  count:
+    type: number
+    default: 1
+    description: |-
+      Number of agents to be created.
+
+  cli-args:
+    type: string
+    required: true
+    description: |-
+      Command line arguments to be passed to `yc loadtesting agent create`.
+
+      See `yc loadtesting agent create -h` for more details.
+
+  service-account-id:
+    type: string
+    default: ""
+    description: |-
+      ID of a service account for agent VM.
+
+  vm-zone:
+    type: string
+    default: "ru-central1-d"
+    description: |-
+      Compute zone to create agent vm in.
+
+  name-prefix:
+    type: string
+    default: "onetime-ci-agent"
+    description: |-
+      If count=0, a name of created agent.
+      if count>0, a name prefix of created agents.
+
+  description:
+    type: string
+    description: |-
+      Description of created agents.
+
+  labels:
+    type: string
+    default: "source=github"
+    description: |-
+      Labels of created agents. Format: 'key1=value1,key2=value2'.
+
+  action-log-level:
+    type: string
+    default: NOTICE
+    options:
+      - NOTICE
+      - INFO
+      - DEBUG
+    description: |-
+      Action log level.
+
+outputs:
+  agent-ids:
+    value: ${{ steps.output-ids.outputs.res }}
+    description: |-
+      IDs of created agents.
+
+  artifacts-dir:
+    value: ${{ steps.make-artifacts-dir.outputs.res }}
+    description: |-
+      Action artifacts directory. If needed, save it using actions/upload_artifacts.
+
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v4
-    - uses: ./yc-setup
-    - name: create agent
+    - id: setup
+      name: setup
+      shell: bash
+      env:
+        YC_LT_AUTHORIZED_KEY_JSON: '${{ inputs.auth-key-json }}'
+        YC_LT_AUTHORIZED_KEY_JSON_BASE64: '${{ inputs.auth-key-json-base64 }}'
+        YC_LT_FOLDER_ID: '${{ inputs.folder-id }}'
+      run: |
+        $GITHUB_ACTION_PATH/../yc-setup/setup.sh
+
+    - id: make-artifacts-dir
+      name: make artifacts directory
+      shell: bash
+      run: |
+        _OUT_DIR="${{ runner.temp }}/${{ github.job }}-$((RANDOM))"
+        mkdir -p "$_OUT_DIR" || true
+        echo "res=$_OUT_DIR" >> "$GITHUB_OUTPUT"
+
+    - id: run
+      name: create agents
+      shell: bash
+      env:
+        YC_LT_AGENT_CREATE_TIMEOUT: '${{ inputs.timeout }}'
+
+        YC_LT_AGENT_SA_ID: '${{ inputs.service-account-id }}'
+        YC_LT_AGENT_ZONE: '${{ inputs.vm-zone }}'
+        YC_LT_AGENT_IPV4_ADDRESS: 'auto'
+
+        YC_LT_AGENT_NAME_PREFIX: '${{ inputs.name-prefix }}'
+        YC_LT_AGENT_DESCRIPTION: '${{ inputs.description }}'
+        YC_LT_AGENT_LABELS: '${{ inputs.labels }}'
+
+        YC_LT_LOG_LEVEL: '${{ inputs.action-log-level }}'
+        YC_LT_OUTPUT_DIR: '${{ steps.make-artifacts-dir.outputs.res }}'
+        YC_LT_CLI_INTERACTIVE: 0
       run: |
         set -e
-        _impl/agent_create.sh --count $AGENTS_COUNT \
-          --description "CI agent" \
-          --labels "workflow=${WORKFLOW_ID}"
+
+        echo "agent_ids_file=${{ steps.make-artifacts-dir.outputs.res }}/agent-ids" >> "$GITHUB_OUTPUT"
+        touch "${{ steps.make-artifacts-dir.outputs.res }}/agent-ids"
+
+        _ARGS=()
+        read -d '' -ra _ARGS <<< "${{ inputs.cli-args }}" || true
+        $GITHUB_ACTION_PATH/../_impl/agent_create.sh \
+          --count '${{ inputs.count }}' "${_ARGS[@]}" \
+          >> "${{ steps.make-artifacts-dir.outputs.res }}/agent-ids"
+
+    - id: output-ids
+      name: add agent ids to outputs
+      if: always()
       shell: bash
-
-
+      run: |
+        {
+          echo 'res<<EOF'
+          cat "${{ steps.run.outputs.agent_ids_file }}"
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
