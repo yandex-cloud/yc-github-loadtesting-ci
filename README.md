@@ -3,11 +3,11 @@
 ## Summary
 
 List of available actions:
-* agents-create - create and start load testing agents using Yandex Cloud Compute VMs for hosting (Compute is billed separately)
-* agents-delete - delete load testing agents
-* test-suite - execute multiple load tests sequentially
-* test-single-run - execute a single load test
-* test-single-check - check results of a single load test
+* _agents-create_ - create and start load testing agents using Yandex Cloud Compute VMs for hosting (Compute is billed separately)
+* _agents-delete_ - delete load testing agents
+* _test-suite_ - execute multiple load tests sequentially
+* _test-single-run_ - execute a single load test
+* _test-single-check_ - check results of a single load test
 
 ## Configuration
 
@@ -35,14 +35,7 @@ with:
 
   # (Optional) Action logs verbosity level.
   # One of: NOTICE, INFO, DEBUG (default=NOTICE)
-  action-log-level: NOTICE
-
-  # (Optional) Same as auth-key-json-base64, but expects an unencoded value.
-  # The use of this parameter is discouraged because it can lead to unwanted
-  # logs obfuscation (see https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets).
-  #
-  # Ignored, if auth-key-json-base64 is set.
-  auth-key-json: ${{ secrets.YC_KEY }}
+  # action-log-level: NOTICE
 ```
 
 ### agents-create
@@ -51,7 +44,7 @@ Create agents alongside with Cloud Compute VMs to host them.
   
 This action is usually used used in pair with 'agents-delete' action.
 
-SA authorized by 'auth-key-json-base64' must have following roles in 'folder-id':
+SA authorized by `auth-key-json-base64` must have following roles in `folder-id`:
 - `loadtesting.loadTester` - to create an agent
 - `compute.editor` - to create and start agent VM
 - `iam.serviceAccounts.user` - to assign service account to agent VM
