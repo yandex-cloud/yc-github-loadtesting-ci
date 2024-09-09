@@ -47,6 +47,23 @@ with:
 
 ### agents-create
 
+Create agents alongside with Cloud Compute VMs to host them.
+  
+This action is usually used used in pair with 'agents-delete' action.
+
+SA authorized by 'auth-key-json-base64' must have following roles in 'folder-id':
+- loadtesting.loadTester - to create an agent
+- compute.editor - to create and start agent VM
+- iam.serviceAccounts.user - to assign service account to agent VM
+- vpc.user - to configure network interface on agent VM
+- vpc.publicAdmin - to configure public IP on agent VM (the default way, may be omitted if you know what you are doing)
+
+For full specification, see [agents-create/action.yml](agents-create/action.yml).
+
+#### Easy
+- Resources: 2 CPU, 2 GB RAM (default)
+- Network: one-to-one NAT (dynamic public IP) in automatically selected subnet (default)
+
 ```yaml
 uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
 with:
@@ -54,45 +71,81 @@ with:
   folder-id: ${{ vars.YC_FOLDER_ID }}
   auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
 
-  # (Optional) Arguments to be passed to YC CLI. Default is an empty string.
-  # If --network-interface is not provided, created agent will have a one-to-one NAT (dynamic public IP) in an automatically chosen subnet.
-  #
-  # YC CLI command: `yc loadtesting agent create ARGS`.
-  cli-args: ''
+  # Agent service account ID (with role 'loadtesting.generatorClient').
+  service-account-id: ${{ vars.YC_LOADTESTING_SA_ID }}
 
-  # (Required if --service-account-id is missing in cli-args) ID of a service account to run an agent VM on.
-  #
-  # --service-account-id option in cli-args overrides this parameter.
-  service-account-id: ${{ vars.YC_LOADTESTING_AGENT_IC }}
+  # Agent labels.
+  labels: "workflow=${{ github.run_id }}"
 
-  # (Optional) Number of created agents. Default is 1.
-  count: 1
+  # Number of agents to be created.
+  # count: 1
 
-  # (Optional) Compute zone to create agent VM in. Default is 'ru-central1-d'.
-  #
-  # --zone option in cli-args overrides this parameter.
-  vm-zone: ru-central1-d
-
-  # (Optional) Agent name prefix (full name, if count=1). Default is 'onetime-ci-agent'.
-  #
-  # --name option in cli-args overrides this parameter.
-  name-prefix: github-actions-agent
-
-  # (Optional) Agent description.
-  #
-  # --description option in cli-args overrides this parameter.
-  description: ''
-
-  # (Optional) Agent labels in 'key1=value1,key2=value2' format.
-  #
-  # --labels option in cli-args overrides this parameter.
-  labels: 'souce=github'
-
-  # (Optional) Time (in seconds) to wait until created agents become ready for tests execution. Default is 600.
-  #
-  # The most likely reason of reaching this timeout is invalid agent configuration (no public IP or NAT, strict security group, etc.)
-  timeout: 600
+  # Compute zone to run agent VM in.
+  # vm-zone: ru-central1-a
 ```
+
+#### With manually specified VM configuration
+- Resources: CPU and RAM settings are passed via `cli-args`
+- Network: one-to-one NAT (dynamic public IP) in automatically selected subnet (default)
+
+<details><summary>YAML configuration...</summary>
+
+```yaml
+uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
+with:
+  # See 'common configuration'.
+  folder-id: ${{ vars.YC_FOLDER_ID }}
+  auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
+
+  # Agent service account ID (with role 'loadtesting.generatorClient').
+  service-account-id: ${{ vars.YC_LOADTESTING_SA_ID }}
+
+  # Agent labels.
+  labels: "workflow=${{ github.run_id }}"
+
+  # Number of agents to be created.
+  # count: 1
+
+  # Compute zone to run agent VM in.
+  # vm-zone: ru-central1-a
+
+  # Additional cli arguments.
+  cli-args: |-
+    --cores 2
+    --memory 2G
+```
+
+</details>
+
+#### With manually specified network settings
+- Resources: passed via `cli-args`
+- Network: passed via `cli-args`
+
+This version is essentially identical to `yc loadtesting agent create ${cli-args}`.
+
+<details><summary>YAML Configuration...</summary>
+
+```yaml
+uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
+with:
+  # See 'common configuration'.
+  folder-id: ${{ vars.YC_FOLDER_ID }}
+  auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
+
+  # Number of agents to be created.
+  # count: 1
+
+  # Additional cli arguments.
+  cli-args: |-
+    --service-account-id "${{ vars.YC_LOADTESTING_SA_ID }}"
+    --labels "workflow=${{ github.run_id }}"
+    --cores 2
+    --memory 2G
+    --zone 'ru-central1-a'
+    --network-settings "subnet-name=default-a,security-group-ids=${{ vars.YC_LOADTESTING_AGENT_SECURITY_GROUP_ID }}"
+```
+
+</details>
 
 ### agents-delete
 
