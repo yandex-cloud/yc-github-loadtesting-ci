@@ -1,35 +1,49 @@
 name: 'Create agents'
 description: |-
-  Create agents with given parameters. Normally, used in pair with 'agents-delete' action.
+  Create agents alongside with Cloud Compute VMs to host them.
+  
+  This action is usually used used in pair with 'agents-delete' action.
 
-  Please, refer to `yc loadtesting agent create -h` for more information about accepted parameters.
+  SA authorized by 'auth-key-json-base64' must have following roles in 'folder-id':
+  - loadtesting.loadTester - to create an agent
+  - compute.editor - to create and start agent VM
+  - iam.serviceAccounts.user - to assign service account to agent VM
+  - vpc.user - to configure network interface on agent VM
+  - vpc.publicAdmin - to configure public IP on agent VM (the default way, may be omitted if you know what you are doing)
 
 inputs:
-  auth-key-json:
-    required: false
-    description: |-
-      An authorized key string in JSON format.
-
-      NOTE: to prevent some actions output issues, it is highly recommended to use base64 encoded version.
-
-  auth-key-json-base64:
-    required: false
-    description: |-
-      BASE64 encoded authorized key string in JSON format.
-
-      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem`
-      and add the content of result file to GitHub secrets.
-
   folder-id:
     required: true
     description: |-
       ID of a folder in Yandex Cloud.
 
-  timeout:
-    type: number
-    default: 600
+  auth-key-json-base64:
+    required: false # true, if auth-key-json is not set
     description: |-
-      A timeout to wait for agents to become READY_FOR_TEST
+      BASE64 encoded authorized key string in JSON format. This setting is preferred over `auth-key-json`.
+
+      The action will perform all operations on behalf of a service account for which this authorized
+      key was generated.
+
+      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem`
+      and add the content of result file to GitHub secrets.
+      
+  auth-key-json:
+    required: false # true, if auth-key-json-base64 is not set
+    description: |-
+      Use 'auth-key-json-base64'.
+
+      An authorized key string in JSON format.
+
+      The use of this parameter is discouraged because it can lead to unwanted
+      logs obfuscation (see https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets).
+
+  action-log-level:
+    type: string
+    default: NOTICE
+    options: [NOTICE, INFO, DEBUG]
+    description: |-
+      Action log level.
 
   count:
     type: number
@@ -37,25 +51,19 @@ inputs:
     description: |-
       Number of agents to be created.
 
-  cli-args:
-    type: string
-    required: true
-    description: |-
-      Command line arguments to be passed to `yc loadtesting agent create`.
-
-      See `yc loadtesting agent create -h` for more details.
-
   service-account-id:
     type: string
     default: ""
     description: |-
-      ID of a service account for agent VM.
+      ID of a service account to create agent VM with.
+
+      The service account must have 'loadtesting.generatorClient' role.
 
   vm-zone:
     type: string
     default: "ru-central1-d"
     description: |-
-      Compute zone to create agent vm in.
+      Compute zone to create agent VM in.
 
   name-prefix:
     type: string
@@ -75,15 +83,28 @@ inputs:
     description: |-
       Labels of created agents. Format: 'key1=value1,key2=value2'.
 
-  action-log-level:
+  cli-args:
     type: string
-    default: NOTICE
-    options:
-      - NOTICE
-      - INFO
-      - DEBUG
+    default: ""
     description: |-
-      Action log level.
+      Additional command line arguments to be passed to `yc loadtesting agent create`
+      (see `yc loadtesting agent create -h` for more details).
+      
+      Override rules:
+      * '--zone ARG' overrides 'vm-zone' input parameter
+      * '--service-account-id ARG' overrides 'service-account-id' input parameter
+      * '--network-interface' overrides default network interface settings (which is - 1-to-1 NAT (dynamic public IP) in automatically chosen subnet)
+      * '--name ARG' overrides 'name-prefix' input parameter
+      * '--description ARG' overrides 'description' input parameter
+      * '--labels' overrides 'labels' input parameter
+
+  timeout:
+    type: number
+    default: 600
+    description: |-
+      Time to wait for agents to become READY_FOR_TEST.
+
+      Usually, reaching this timeout means either missing permissions or invalid agent network settings.
 
 outputs:
   agent-ids:
