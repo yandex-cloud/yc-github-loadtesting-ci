@@ -52,17 +52,17 @@ Create agents alongside with Cloud Compute VMs to host them.
 This action is usually used used in pair with 'agents-delete' action.
 
 SA authorized by 'auth-key-json-base64' must have following roles in 'folder-id':
-- loadtesting.loadTester - to create an agent
-- compute.editor - to create and start agent VM
-- iam.serviceAccounts.user - to assign service account to agent VM
-- vpc.user - to configure network interface on agent VM
-- vpc.publicAdmin - to configure public IP on agent VM (the default way, may be omitted if you know what you are doing)
+- `loadtesting.loadTester` - to create an agent
+- `compute.editor` - to create and start agent VM
+- `iam.serviceAccounts.user` - to assign service account to agent VM
+- `vpc.user` - to configure network interface on agent VM
+- `vpc.publicAdmin` - to configure public IP on agent VM (the default way, may be omitted if you know what you are doing)
 
 For full specification, see [agents-create/action.yml](agents-create/action.yml).
 
-#### Easy
-- Resources: 2 CPU, 2 GB RAM (default)
-- Network: one-to-one NAT (dynamic public IP) in automatically selected subnet (default)
+#### **With defaults**
+- **Resources**: 2 CPU, 2 GB RAM (default)
+- **Network**: one-to-one NAT (dynamic public IP) in automatically selected subnet (default)
 
 ```yaml
 uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
@@ -84,9 +84,9 @@ with:
   # vm-zone: ru-central1-a
 ```
 
-#### With manually specified VM configuration
-- Resources: CPU and RAM settings are passed via `cli-args`
-- Network: one-to-one NAT (dynamic public IP) in automatically selected subnet (default)
+#### **With manually specified VM configuration**
+- **Resources**: CPU and RAM settings are passed via `cli-args`
+- **Network**: one-to-one NAT (dynamic public IP) in automatically selected subnet (default)
 
 <details><summary>YAML configuration...</summary>
 
@@ -117,9 +117,9 @@ with:
 
 </details>
 
-#### With manually specified network settings
-- Resources: passed via `cli-args`
-- Network: passed via `cli-args`
+#### **With manually specified network settings**
+- **Resources**: passed via `cli-args`
+- **Network**: passed via `cli-args`
 
 This version is essentially identical to `yc loadtesting agent create ${cli-args}`.
 
