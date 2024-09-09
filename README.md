@@ -47,7 +47,7 @@ with:
 
 ### agents-create
 
-```
+```yaml
 uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
 with:
   # See 'common configuration'.
