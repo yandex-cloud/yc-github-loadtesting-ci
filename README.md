@@ -54,14 +54,6 @@ with:
   folder-id: ${{ vars.YC_FOLDER_ID }}
   auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
 
-  # (Optional) Time (in seconds) to wait until created agents become ready for tests execution. Default is 600.
-  #
-  # The most likely reason of reaching this timeout is invalid agent configuration (no public IP or NAT, strict security group, etc.)
-  timeout: 600
-
-  # (Optional) Number of agents to create. Default is 1.
-  count: 1
-
   # (Optional) Arguments to be passed to YC CLI. Default is an empty string.
   # If --network-interface is not provided, created agent will have a one-to-one NAT (dynamic public IP) in an automatically chosen subnet.
   #
@@ -72,6 +64,9 @@ with:
   #
   # --service-account-id option in cli-args overrides this parameter.
   service-account-id: ${{ vars.YC_LOADTESTING_AGENT_IC }}
+
+  # (Optional) Number of created agents. Default is 1.
+  count: 1
 
   # (Optional) Compute zone to create agent VM in. Default is 'ru-central1-d'.
   #
@@ -92,6 +87,11 @@ with:
   #
   # --labels option in cli-args overrides this parameter.
   labels: 'souce=github'
+
+  # (Optional) Time (in seconds) to wait until created agents become ready for tests execution. Default is 600.
+  #
+  # The most likely reason of reaching this timeout is invalid agent configuration (no public IP or NAT, strict security group, etc.)
+  timeout: 600
 ```
 
 ### agents-delete
