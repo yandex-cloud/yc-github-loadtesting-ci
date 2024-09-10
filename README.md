@@ -8,7 +8,10 @@
 * **test-single-run** - execute a single load test
 * **test-single-check** - check results of a single load test
 
-## Action: **test-suite**
+## Action: `test-suite`
+```yaml
+uses: yandex-cloud/yc-github-loadtesting-ci/test-suite@main
+```
 
 Execute and assess a bunch of tests in a single action step.
 
@@ -61,7 +64,10 @@ A list of directories containing `test-config.yaml` test configuration files sho
       _impl/testdata/https-const-rps
 ```
 
-## Action: **agents-create**
+## Action: `agents-create`
+```yaml
+uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
+```
 
 Create agents alongside with Cloud Compute VMs to host them.
   
@@ -154,7 +160,10 @@ with:
 
 </details>
 
-## Action: **agents-delete**
+## Action: `agents-delete`
+```yaml
+uses: yandex-cloud/yc-github-loadtesting-ci/agents-delete@main
+```
 
 Delete agents (and the VMs).
 
@@ -210,7 +219,10 @@ loadtesting:
         agent-ids: ${{ steps.agent-create.outputs.agent-ids }}
 ```
 
-## Action: **test-single-run**
+## Action: `test-single-run`
+```yaml
+uses: yandex-cloud/yc-github-loadtesting-ci/test-single-run@main
+```
 
 Execute a single test.
 
@@ -260,7 +272,10 @@ A directory containing `test-config.yaml` test configuration file should be prov
     test-directory: _impl/testdata/https-const-rps
 ```
 
-## Action: **test-single-check**
+## Action: `test-single-check`
+```yaml
+uses: yandex-cloud/yc-github-loadtesting-ci/test-single-check@main
+```
 
 Assess results measured in a single test run.
 
