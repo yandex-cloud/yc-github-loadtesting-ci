@@ -156,7 +156,49 @@ with:
 
 ### agents-delete
 
-todo
+Delete agents (and the VMs).
+
+This action is usually used used in pair with 'agents-create' action.
+
+#### Inputs
+- `folder-id` - Yandex Cloud Folder ID
+- `auth-key-json-base64` - CI Service Account's authorized key json (BASE64)
+- `action-log-level` - action logs verbosity level
+- `agent-ids` - agent IDs to be deleted
+
+#### Outputs
+- `artifacts-dir` - action artifacts directory
+
+#### Example
+
+This action is usually used in pair with `create-agent`:
+
+```yaml
+loadtesting:
+  name: loadtesting job
+  runs-on: ubuntu-latest
+  steps:
+    - id: create-agents
+      uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
+      with:
+        folder-id: ${{ vars.YC_FOLDER_ID }}
+        auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
+        service-account-id: ${{ vars.YC_LOADTESTING_SA_ID }}
+    #
+    # here we run some tests on created agents
+    # - id: run-test
+    #   ...
+    #
+    - id: delete-agents
+      if: always() # make sure delete is called even if previous steps fail
+      uses: yandex-cloud/yc-github-loadtesting-ci/agents-delete@main
+      with:
+        folder-id: ${{ vars.YC_FOLDER_ID }}
+        auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
+
+        # pass created agent ids to make sure they are deleted
+        agent-ids: ${{ steps.agent-create.outputs.agent-ids }}
+```
 
 ### test-sute
 
