@@ -166,8 +166,12 @@ This action is usually used used in pair with 'agents-create' action.
 - `action-log-level` - action logs verbosity level
 - `agent-ids` - agent IDs to be deleted
 
+Full specification: [agents-delete/action.yml](agents-delete/action.yml).
+
 #### Outputs
 - `artifacts-dir` - action artifacts directory
+
+Full specification: [agents-delete/action.yml](agents-delete/action.yml).
 
 #### Example
 
