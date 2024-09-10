@@ -23,7 +23,6 @@ jobs:
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
 
           count: 2
-          labels: "workflow=w${{ env.WORKFLOW_ID }}"
           service-account-id: ${{ vars.YC_LOADTESTING_AGENT_SA_ID }}
           vm-zone: ru-central1-b
 
@@ -50,7 +49,6 @@ jobs:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
 
-          agent-filter: "labels.workflow=w${{ env.WORKFLOW_ID }}"
           test-directories: |-
             "${{ github.workspace }}/_impl/testdata/http-const-rps-2-agents"
             "${{ github.workspace }}/_impl/testdata/https-const-rps-2-agents"
@@ -81,7 +79,6 @@ jobs:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
 
-          agent-filter: "labels.workflow=w${{ env.WORKFLOW_ID }}"
           test-directory: "${{ env.TEST_DIR }}"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -124,7 +121,6 @@ jobs:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
 
-          agent-filter: "labels.workflow=w${{ env.WORKFLOW_ID }}"
           test-directory: "${{ env.TEST_DIR }}"
       - uses: actions/upload-artifact@v4
         if: always()
