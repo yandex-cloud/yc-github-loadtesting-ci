@@ -3,25 +3,38 @@ description: |-
   Delete agents with ids specified in 'agent-ids' parameter. Normally, used in pair with 'agents-create' action.
 
 inputs:
-  auth-key-json:
-    required: false
-    description: |-
-      An authorized key string in JSON format.
-
-      NOTE: to prevent some actions output issues, it is highly recommended to use base64 encoded version.
-
-  auth-key-json-base64:
-    required: false
-    description: |-
-      BASE64 encoded authorized key string in JSON format.
-
-      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem`
-      and add the content of result file to GitHub secrets.
-
   folder-id:
     required: true
     description: |-
       ID of a folder in Yandex Cloud.
+
+  auth-key-json-base64:
+    required: false # true, if auth-key-json is not set
+    description: |-
+      BASE64 encoded authorized key string in JSON format. This setting is preferred over `auth-key-json`.
+
+      The action will perform all operations on behalf of a service account for which this authorized
+      key was generated.
+
+      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem`
+      and add the content of result file to GitHub secrets.
+      
+  auth-key-json:
+    required: false # true, if auth-key-json-base64 is not set
+    description: |-
+      Use 'auth-key-json-base64'.
+
+      An authorized key string in JSON format.
+
+      The use of this parameter is discouraged because it can lead to unwanted
+      logs obfuscation (see https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets).
+
+  action-log-level:
+    type: string
+    default: NOTICE
+    options: [NOTICE, INFO, DEBUG]
+    description: |-
+      Action log level.
 
   agent-ids:
     required: true
@@ -29,16 +42,6 @@ inputs:
       A string containing whitespace-separated list of agents to be deleted.
 
       Normally, should be used with conjunction with `agents-create.outputs.agent-ids`.
-
-  action-log-level:
-    type: string
-    default: NOTICE
-    options:
-      - NOTICE
-      - INFO
-      - DEBUG
-    description: |-
-      Action log level.
 
 outputs:
   artifacts-dir:
