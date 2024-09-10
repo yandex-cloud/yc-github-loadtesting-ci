@@ -145,6 +145,18 @@ Delete agents (and the VMs).
 This action is usually used used in pair with 'agents-create' action.
 
 <!--doc-begin-agents-delete-->
+### Inputs
+|Input|Description|Default|Required|
+|-----|-----------|-------|:------:|
+|`folder-id`|ID of a folder in Yandex Cloud.|n/a|yes|
+|`auth-key-json-base64`|<p>BASE64 encoded authorized key string in JSON format. This setting is preferred over <code>auth-key-json</code>.</p><p>The action will perform all operations on behalf of a service account for which this authorized<br />key was generated.</p><p>Given a json file, encode it via command line <code>base64 &lt;authorized_key.json &gt;authorized_key.pem</code><br />and add the content of result file to GitHub secrets.</p>|n/a|no|
+|`auth-key-json`|<p>Use 'auth-key-json-base64'.</p><p>An authorized key string in JSON format.</p><p>The use of this parameter is discouraged because it can lead to unwanted<br />logs obfuscation (see https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets).</p>|n/a|no|
+|`action-log-level`|Action log level.|`NOTICE`|no|
+|`agent-ids`|<p>A string containing whitespace-separated list of agents to be deleted.</p><p>Normally, should be used with conjunction with <code>agents-create.outputs.agent-ids</code>.</p>|n/a|yes|
+### Outputs
+|Output|Description|
+|------|-----------|
+|`artifacts-dir`|Action artifacts directory. If needed, save it using actions/upload_artifacts.|
 <!--doc-end-agents-delete-->
 
 ### Required roles
