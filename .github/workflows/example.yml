@@ -17,7 +17,7 @@ jobs:
       agent-ids: ${{ steps.create-agents.outputs.agent-ids }}
     steps:
       - id: create-agents
-        uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
+        uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@README
         with:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - id: run
-        uses: yandex-cloud/yc-github-loadtesting-ci/test-suite@main
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-suite@README
         with:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
@@ -74,7 +74,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - id: run
-        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-run@main
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-run@README
         with:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
@@ -87,7 +87,7 @@ jobs:
           path: ${{ steps.run.outputs.artifacts-dir }}
 
       - id: check
-        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-check@main
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-check@README
         with:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - id: run
-        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-run@main
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-run@README
         with:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
@@ -129,7 +129,7 @@ jobs:
           path: ${{ steps.run.outputs.artifacts-dir }}
 
       - id: check
-        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-check@main
+        uses: yandex-cloud/yc-github-loadtesting-ci/test-single-check@README
         with:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}
@@ -155,7 +155,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: delete-agents
-        uses: yandex-cloud/yc-github-loadtesting-ci/agents-delete@main
+        uses: yandex-cloud/yc-github-loadtesting-ci/agents-delete@README
         with:
           auth-key-json-base64: ${{ secrets.YC_LOADTESTING_KEY_JSON_BASE64 }}
           folder-id: ${{ vars.YC_LOADTESTING_FOLDER_ID }}

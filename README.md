@@ -3,13 +3,24 @@
 ## Summary
 
 List of available actions:
-* _agents-create_ - create and start load testing agents using Yandex Cloud Compute VMs for hosting (Compute is billed separately)
-* _agents-delete_ - delete load testing agents
-* _test-suite_ - execute multiple load tests sequentially
-* _test-single-run_ - execute a single load test
-* _test-single-check_ - check results of a single load test
+* **test-suite** - execute multiple load tests sequentially
+* **agents-create** - create and start load testing agents using Yandex Cloud Compute VMs for hosting (Compute is billed separately)
+* **agents-delete** - delete load testing agents
+* **test-single-run** - execute a single load test
+* **test-single-check** - check results of a single load test
 
-## test-sute
+## test-suite
+
+Execute and assess a bunch of tests in a single action step.
+
+Each test is specified by a separate directory containing:
+- `test-config.yaml` test configuration file
+- (optional) `meta.json` json file specifying test properties
+- (optional) additional test data files which will be transferred to the agent via `data-bucket`
+
+A list of directories containing `test-config.yaml` test configuration files should be provided via `test-directories` input parameter.
+
+**NOTE**: Why `data-bucket` is needed? Test data files often contain sensitive information such as access tokens and customer data. Using `data-bucket` as a proxy storage guarantees that this sensitive information never gets stored elsewhere.
 
 <!--doc-begin-test-suite-->
 ### Inputs
@@ -36,10 +47,20 @@ List of available actions:
 <!--doc-end-test-suite-->
 
 ### Required roles
-todo
+- `loadtesting.loadTester` - to create and run the test
+- `storage.uploader` - to upload test data to Object Storage (required, if `data-bucket` is specified)
 
 ### Example
-todo
+```yaml
+- uses: actions/checkout@v4
+- uses: yandex-cloud/yc-github-loadtesting-ci/test-suite@main
+  with:
+    folder-id: ${{ vars.YC_FOLDER_ID }}
+    auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
+    test-directories: |-
+      _impl/testdata/http-const-rps
+      _impl/testdata/https-const-rps
+```
 
 ## agents-create
 
@@ -87,20 +108,11 @@ This action is usually used used in pair with 'agents-delete' action.
 
 uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
 with:
-  # See 'common configuration'.
   folder-id: ${{ vars.YC_FOLDER_ID }}
   auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
-
-  # Agent service account ID (with role 'loadtesting.generatorClient').
   service-account-id: ${{ vars.YC_LOADTESTING_SA_ID }}
-
-  # Agent labels.
   labels: "workflow=${{ github.run_id }}"
-
-  # Number of agents to be created.
   # count: 1
-
-  # Compute zone to run agent VM in.
   # vm-zone: ru-central1-a
 ```
 
@@ -109,26 +121,15 @@ with:
 ```yaml
 uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
 with:
-  # See 'common configuration'.
   folder-id: ${{ vars.YC_FOLDER_ID }}
   auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
-
-  # Agent service account ID (with role 'loadtesting.generatorClient').
   service-account-id: ${{ vars.YC_LOADTESTING_SA_ID }}
-
-  # Agent labels.
   labels: "workflow=${{ github.run_id }}"
-
-  # Number of agents to be created.
-  # count: 1
-
-  # Compute zone to run agent VM in.
-  # vm-zone: ru-central1-a
-
-  # Additional cli arguments.
   cli-args: |-
     --cores 2
     --memory 2G
+  # count: 1
+  # vm-zone: ru-central1-a
 ```
 
 </details>
@@ -140,14 +141,8 @@ This version is essentially identical to `yc loadtesting agent create ${cli-args
 ```yaml
 uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
 with:
-  # See 'common configuration'.
   folder-id: ${{ vars.YC_FOLDER_ID }}
   auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
-
-  # Number of agents to be created.
-  # count: 1
-
-  # Additional cli arguments.
   cli-args: |-
     --service-account-id "${{ vars.YC_LOADTESTING_SA_ID }}"
     --labels "workflow=${{ github.run_id }}"
@@ -155,6 +150,7 @@ with:
     --memory 2G
     --zone 'ru-central1-a'
     --network-settings "subnet-name=default-a,security-group-ids=${{ vars.YC_LOADTESTING_AGENT_SECURITY_GROUP_ID }}"
+  # count: 1
 ```
 
 </details>
@@ -217,6 +213,17 @@ loadtesting:
 
 ## test-single-run
 
+Execute a single test.
+
+Each test should be specified by a separate directory containing:
+- `test-config.yaml` test configuration file
+- (optional) `meta.json` json file specifying test properties
+- (optional) additional test data files which will be transferred to the agent via `data-bucket` 
+
+A directory containing `test-config.yaml` test configuration file should be provided via `test-directory` input parameter.
+
+**NOTE**: Why `data-bucket` is needed? Test data files often contain sensitive information such as access tokens and customer data. Using `data-bucket` as a proxy storage guarantees that this sensitive information never gets stored elsewhere.
+
 <!--doc-begin-test-single-run-->
 ### Inputs
 |Input|Description|Default|Required|
@@ -241,12 +248,37 @@ loadtesting:
 <!--doc-end-test-single-run-->
 
 ### Required roles
-todo
+- `loadtesting.loadTester` - to create and run the test
+- `storage.uploader` - to upload test data to Object Storage (required, if `data-bucket` is specified)
 
 ### Example
-todo
+```yaml
+- uses: actions/checkout@v4
+- uses: yandex-cloud/yc-github-loadtesting-ci/test-run-single@main
+  with:
+    folder-id: ${{ vars.YC_FOLDER_ID }}
+    auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
+    test-directory: _impl/testdata/https-const-rps
+```
 
 ## test-single-check
+
+Assess results measured in a single test run.
+
+The assessment is performed via custom scripts (`check_summary.sh` and `check_report.sh`) which can be added to test directory:
+```sh
+TEST_ID="bb4asdfjljbhh" # some test id
+TEST_DIR="_impl/testdata/http-const-rps" # test-directory
+
+yc --format json loadtesting test get $TEST_ID > summary.json
+yc --format json loadtesting test get-report-tagles $TEST_ID > report.json
+
+set -e
+$DIR/check_summary.sh summary.json
+$DIR/check_report.sh report.json
+```
+
+If `check_report.sh` or `check_summary.sh` are not found in test directory, some basic checks will be perfomed instead.
 
 <!--doc-begin-test-single-check-->
 ### Inputs
@@ -267,7 +299,21 @@ todo
 <!--doc-end-test-single-check-->
 
 ### Required roles
-todo
+- `loadtesting.loadTester` - to retrieve information about the test
 
 ### Example
-todo
+```yaml
+- uses: actions/checkout@v4
+- uses: yandex-cloud/yc-github-loadtesting-ci/test-run-single@main
+  id: run-test
+  with:
+    folder-id: ${{ vars.YC_FOLDER_ID }}
+    auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
+    test-directory: _impl/testdata/https-const-rps
+- uses: yandex-cloud/yc-github-loadtesting-ci/test-check-single@main
+  with:
+    folder-id: ${{ vars.YC_FOLDER_ID }}
+    auth-key-json-base64: ${{ secrets.YC_KEY_BASE64 }}
+    test-id: ${{ steps.run-test.outputs.test-id }}
+    test-directory: _impl/testdata/https-const-rps
+```
