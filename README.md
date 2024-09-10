@@ -1,15 +1,14 @@
 # GitHub Actions for Yandex Cloud Load Testig service
 
-## Summary
+## Short reference
 
-List of available actions:
 * **test-suite** - execute multiple load tests sequentially
 * **agents-create** - create and start load testing agents using Yandex Cloud Compute VMs for hosting (Compute is billed separately)
 * **agents-delete** - delete load testing agents
 * **test-single-run** - execute a single load test
 * **test-single-check** - check results of a single load test
 
-## test-suite
+## Action: **test-suite**
 
 Execute and assess a bunch of tests in a single action step.
 
@@ -62,7 +61,7 @@ A list of directories containing `test-config.yaml` test configuration files sho
       _impl/testdata/https-const-rps
 ```
 
-## agents-create
+## Action: **agents-create**
 
 Create agents alongside with Cloud Compute VMs to host them.
   
@@ -155,7 +154,7 @@ with:
 
 </details>
 
-## agents-delete
+## Action: **agents-delete**
 
 Delete agents (and the VMs).
 
@@ -211,7 +210,7 @@ loadtesting:
         agent-ids: ${{ steps.agent-create.outputs.agent-ids }}
 ```
 
-## test-single-run
+## Action: **test-single-run**
 
 Execute a single test.
 
@@ -261,7 +260,7 @@ A directory containing `test-config.yaml` test configuration file should be prov
     test-directory: _impl/testdata/https-const-rps
 ```
 
-## test-single-check
+## Action: **test-single-check**
 
 Assess results measured in a single test run.
 
