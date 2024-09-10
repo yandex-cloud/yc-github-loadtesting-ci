@@ -63,7 +63,7 @@ inputs:
 
   agent-filter:
     type: string
-    default: '${{ github.run_id }}'
+    default: 'labels.workflow=${{ github.run_id }}'
     description: |-
       A filter expression to select agents to execute tests.
 
