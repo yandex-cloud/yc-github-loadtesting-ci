@@ -252,12 +252,12 @@ todo
 ### Inputs
 |Input|Description|Default|Required|
 |-----|-----------|-------|:------:|
-|`auth-key-json`|<p>An authorized key string in JSON format.</p><p>NOTE: to prevent some actions output issues, it is highly recommended to use base64 encoded version.</p>|n/a|no|
-|`auth-key-json-base64`|<p>BASE64 encoded authorized key string in JSON format.</p><p>Given a json file, encode it via command line <code>base64 &lt;authorized_key.json &gt;authorized_key.pem</code><br />and add the content of result file to GitHub secrets.</p>|n/a|no|
 |`folder-id`|ID of a folder in Yandex Cloud.|n/a|yes|
+|`auth-key-json-base64`|<p>BASE64 encoded authorized key string in JSON format. This setting is preferred over <code>auth-key-json</code>.</p><p>The action will perform all operations on behalf of a service account for which this authorized key was generated.</p><p>Given a json file, encode it via command line <code>base64 &lt;authorized_key.json &gt;authorized_key.pem</code> and add the content of result file to GitHub secrets.</p>|n/a|no|
+|`auth-key-json`|<p>Use 'auth-key-json-base64'.</p><p>An authorized key string in JSON format.</p><p>The use of this parameter is discouraged because it can lead to unwanted logs obfuscation (see <a href="https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets">naming your secrets</a>).</p>|``|no|
+|`action-log-level`|Action log level.|`NOTICE`|no|
 |`test-id`|ID of a test to be checked.|n/a|yes|
 |`test-directory`|Directory with test configuration files.|n/a|yes|
-|`action-log-level`|Action log level.|`NOTICE`|no|
 ### Outputs
 |Output|Description|
 |------|-----------|
