@@ -27,26 +27,6 @@ Create agents alongside with Cloud Compute VMs to host them.
 This action is usually used used in pair with 'agents-delete' action.
 
 <!--doc-begin-agents-create-->
-### Inputs
-|Input|Description|Default|Required|
-|-----|-----------|-------|:------:|
-|`folder-id`|ID of a folder in Yandex Cloud.|n/a|yes|
-|`auth-key-json-base64`|<p>BASE64 encoded authorized key string in JSON format. This setting is preferred over <code>auth-key-json</code>.</p><p>The action will perform all operations on behalf of a service account for which this authorized<br />key was generated.</p><p>Given a json file, encode it via command line <code>base64 &lt;authorized_key.json &gt;authorized_key.pem</code><br />and add the content of result file to GitHub secrets.</p>|n/a|no|
-|`auth-key-json`|<p>Use 'auth-key-json-base64'.</p><p>An authorized key string in JSON format.</p><p>The use of this parameter is discouraged because it can lead to unwanted<br />logs obfuscation (see https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets).</p>|n/a|no|
-|`action-log-level`|Action log level.|`NOTICE`|no|
-|`count`|Number of agents to be created.|`1`|no|
-|`service-account-id`|<p>ID of a service account to create agent VM with.</p><p>The service account must have 'loadtesting.generatorClient' role.</p>|``|no|
-|`vm-zone`|Compute zone to create agent VM in.|`ru-central1-d`|no|
-|`name-prefix`|<p>If count=0, a name of created agent.<br />if count&gt;0, a name prefix of created agents.</p>|`onetime-ci-agent`|no|
-|`description`|Description of created agents.|n/a|no|
-|`labels`|Labels of created agents. Format: 'key1=value1,key2=value2'.|`source=github`|no|
-|`cli-args`|<p>Additional command line arguments to be passed to <code>yc loadtesting agent create</code><br />(see <code>yc loadtesting agent create -h</code> for more details).</p><p>Override rules:<br />* '--zone ARG' overrides 'vm-zone' input parameter<br />* '--service-account-id ARG' overrides 'service-account-id' input parameter<br />* '--network-interface' overrides default network interface settings (which is - 1-to-1 NAT (dynamic public IP) in automatically chosen subnet)<br />* '--name ARG' overrides 'name-prefix' input parameter<br />* '--description ARG' overrides 'description' input parameter<br />* '--labels' overrides 'labels' input parameter</p>|``|no|
-|`timeout`|<p>Time to wait for agents to become READY_FOR_TEST.</p><p>Usually, reaching this timeout means either missing permissions or invalid agent network settings.</p>|`600`|no|
-### Outputs
-|Output|Description|
-|------|-----------|
-|`agent-ids`|IDs of created agents.|
-|`artifacts-dir`|Action artifacts directory. If needed, save it using actions/upload_artifacts.|
 <!--doc-end-agents-create-->
 
 ### Required roles
@@ -145,6 +125,18 @@ Delete agents (and the VMs).
 This action is usually used used in pair with 'agents-create' action.
 
 <!--doc-begin-agents-delete-->
+### Inputs
+|Input|Description|Default|Required|
+|-----|-----------|-------|:------:|
+|`folder-id`|ID of a folder in Yandex Cloud.|n/a|yes|
+|`auth-key-json-base64`|<p>BASE64 encoded authorized key string in JSON format. This setting is preferred over <code>auth-key-json</code>.</p><p>The action will perform all operations on behalf of a service account for which this authorized<br />key was generated.</p><p>Given a json file, encode it via command line <code>base64 &lt;authorized_key.json &gt;authorized_key.pem</code><br />and add the content of result file to GitHub secrets.</p>|n/a|no|
+|`auth-key-json`|<p>Use 'auth-key-json-base64'.</p><p>An authorized key string in JSON format.</p><p>The use of this parameter is discouraged because it can lead to unwanted<br />logs obfuscation (see https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets).</p>|n/a|no|
+|`action-log-level`|Action log level.|`NOTICE`|no|
+|`agent-ids`|<p>A string containing whitespace-separated list of agents to be deleted.</p><p>Normally, should be used with conjunction with <code>agents-create.outputs.agent-ids</code>.</p>|n/a|yes|
+### Outputs
+|Output|Description|
+|------|-----------|
+|`artifacts-dir`|Action artifacts directory. If needed, save it using actions/upload_artifacts.|
 <!--doc-end-agents-delete-->
 
 ### Required roles
