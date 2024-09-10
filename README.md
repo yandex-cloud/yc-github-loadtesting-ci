@@ -1,5 +1,8 @@
 # GitHub Actions for Yandex Cloud Load Testig service
 
+<!--doc-begin-agents-create-->
+<!--doc-end-agents-create-->
+
 ## Summary
 
 List of available actions:
