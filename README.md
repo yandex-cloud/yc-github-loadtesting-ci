@@ -44,7 +44,7 @@ Create agents alongside with Cloud Compute VMs to host them.
   
 This action is usually used used in pair with 'agents-delete' action.
 
-SA authorized by `auth-key-json-base64` must have following roles in `folder-id`:
+Required roles:
 - `loadtesting.loadTester` - to create an agent
 - `compute.editor` - to create and start agent VM
 - `iam.serviceAccounts.user` - to assign service account to agent VM
