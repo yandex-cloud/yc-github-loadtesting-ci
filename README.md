@@ -73,7 +73,7 @@ Full specification: [agents-create/action.yml](agents-create/action.yml).
 
 #### Examples
 
-##### **Simple with defaults**
+<details><summary>_Simple_</summary>
 - 2 CPU, 2 GB RAM
 - one-to-one NAT in an automatically selected subnet
 
@@ -97,9 +97,9 @@ with:
   # vm-zone: ru-central1-a
 ```
 
-#### **Specify CPU and RAM**
+</details>
 
-<details><summary>Expand...</summary>
+<details><summary>_Custom CPU and RAM settings_</summary>
 
 ```yaml
 uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
@@ -128,9 +128,7 @@ with:
 
 </details>
 
-#### **Specify custom network settingss**
-
-<details><summary>Expand...</summary>
+<details><summary>_Custom network settings_</summary>
 
 This version is essentially identical to `yc loadtesting agent create ${cli-args}`.
 
