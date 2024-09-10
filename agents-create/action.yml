@@ -22,21 +22,19 @@ inputs:
     description: |-
       BASE64 encoded authorized key string in JSON format. This setting is preferred over `auth-key-json`.
 
-      The action will perform all operations on behalf of a service account for which this authorized
-      key was generated.
+      The action will perform all operations on behalf of a service account for which this authorized key was generated.
 
-      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem`
-      and add the content of result file to GitHub secrets.
+      Given a json file, encode it via command line `base64 <authorized_key.json >authorized_key.pem` and add the content of result file to GitHub secrets.
       
   auth-key-json:
     required: false # true, if auth-key-json-base64 is not set
+    default: ''
     description: |-
       Use 'auth-key-json-base64'.
 
       An authorized key string in JSON format.
 
-      The use of this parameter is discouraged because it can lead to unwanted
-      logs obfuscation (see https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets).
+      The use of this parameter is discouraged because it can lead to unwanted logs obfuscation (see [naming your secrets](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions#naming-your-secrets)).
 
   action-log-level:
     type: string
@@ -53,7 +51,7 @@ inputs:
 
   service-account-id:
     type: string
-    default: ""
+    default: ''
     description: |-
       ID of a service account to create agent VM with.
 
@@ -74,18 +72,19 @@ inputs:
 
   description:
     type: string
+    default: 'Create from Github Actions'
     description: |-
       Description of created agents.
 
   labels:
     type: string
-    default: "source=github"
+    default: 'workflow=${{ github.run_id }}'
     description: |-
       Labels of created agents. Format: 'key1=value1,key2=value2'.
 
   cli-args:
     type: string
-    default: ""
+    default: ''
     description: |-
       Additional command line arguments to be passed to `yc loadtesting agent create`
       (see `yc loadtesting agent create -h` for more details).
