@@ -1,9 +1,11 @@
-# GitHub Actions for Yandex Cloud Load Testig service
+# GitHub Actions for Yandex Cloud Load Testing service
+
+**NOTE**: All actions require `auth-key-json` to authorize requests to Yandex Cloud services. Please check <a href="https://yandex.cloud/en/docs/iam/operations/authorized-key/create#cli_1" target="_blank">this documentation page</a> for instructions how to create one.
 
 ## Short reference
 
 * **test-suite** - execute multiple load tests sequentially
-* **agents-create** - create and start load testing agents using Yandex Cloud Compute VMs for hosting (Compute is billed separately)
+* **agents-create** - create and start load testing agents using Yandex Cloud Compute VMs as a hosting (Compute is billed separately)
 * **agents-delete** - delete load testing agents
 * **test-single-run** - execute a single load test
 * **test-single-check** - check results of a single load test
@@ -72,6 +74,8 @@ uses: yandex-cloud/yc-github-loadtesting-ci/agents-create@main
 Create agents alongside with Cloud Compute VMs to host them.
   
 This action is usually used used in pair with 'agents-delete' action.
+
+**NOTE**: For security reasons you should create new service account with 'loadtesting.generatorClient' role to assign to loadtesting agent (see `service-account-id` input below) 
 
 <!--doc-begin-agents-create-->
 ### Inputs
@@ -190,7 +194,7 @@ This action is usually used used in pair with 'agents-create' action.
 
 ### Example
 
-This action is usually used in pair with `create-agent`:
+This action is usually used in pair with `agents-create` action:
 
 ```yaml
 loadtesting:
