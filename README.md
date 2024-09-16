@@ -258,6 +258,7 @@ A directory containing `test-config.yaml` test configuration file should be prov
 |Output|Description|
 |------|-----------|
 |`test-id`|ID of performed test.|
+|`test-info-file`|File containing a JSON object with information about performed test.|
 |`test-info`|JSON object with information about performed test.|
 |`report-file`|Path to generated .md report file.|
 |`artifacts-dir`|Action artifacts directory. If needed, save it using actions/upload_artifacts.|
