@@ -174,7 +174,7 @@ runs:
       shell: bash
       run: |
         RES_FILE="${{ steps.make-artifacts-dir.outputs.res }}/test-info.json"
-        touch "{}" > "$RES_FILE"
+        echo "{}" > "$RES_FILE"
         echo "res-file=$RES_FILE" >> "$GITHUB_OUTPUT"
 
         if [[ -n "${{ steps.output-id.outputs.res }}" ]]; then
