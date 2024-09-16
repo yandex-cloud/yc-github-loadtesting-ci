@@ -44,6 +44,7 @@ A list of directories containing `test-config.yaml` test configuration files sho
 |Output|Description|
 |------|-----------|
 |`test-ids`|IDs of performed tests.|
+|`test-infos-file`|File containing a JSON array of objects with information about performed tests.|
 |`test-infos`|JSON array of objects with information about performed tests.|
 |`execution-report-file`|Path to generated .md execution report file.|
 |`checks-report-file`|Path to generated .md checks report file.|
