@@ -229,7 +229,7 @@ function yc_s3_upload {
 
     local -r token=${VAR_TOKEN:-$(yc_get_token)}
     local -r auth_h="X-YaCloud-SubjectToken: $token"
-    curl -L -H "$auth_h" --upload-file - "$VAR_OBJECT_STORAGE_URL/$bucket/$bucket_path" \
+    curl --fail -L -H "$auth_h" --upload-file - "$VAR_OBJECT_STORAGE_URL/$bucket/$bucket_path" \
         2>/dev/null \
         <"$file"
 
@@ -247,7 +247,7 @@ function yc_s3_delete {
 
     local -r token=${VAR_TOKEN:-$(yc_get_token)}
     local -r auth_h="X-YaCloud-SubjectToken: $token"
-    curl -L -H "$auth_h" -X DELETE "$VAR_OBJECT_STORAGE_URL/$bucket/$bucket_path" \
+    curl --fail -L -H "$auth_h" -X DELETE "$VAR_OBJECT_STORAGE_URL/$bucket/$bucket_path" \
         2>/dev/null
 
     return $?
