@@ -193,9 +193,9 @@ runs:
         echo "res-file=$RES_FILE" >> "$GITHUB_OUTPUT"
 
         if [[ -n "${{ steps.output-ids.outputs.res }}" ]]; then
-          _ARGS=()
-          read -d '' -ra _ARGS <<< "${{ steps.output-ids.outputs.res }}" || true
-          yc loadtesting test get "${_ARGS[@]}" --format json > "$RES_FILE"
+          echo "${{ steps.output-ids.outputs.res }}" \
+            | xargs -n1 yc --format json loadtesting test get \
+            | jq --slurp > "$RES_FILE"
         fi
 
         {
