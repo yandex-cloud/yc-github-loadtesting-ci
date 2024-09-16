@@ -91,6 +91,11 @@ outputs:
     description: |-
       ID of performed test.
 
+  test-info-file:
+    value: ${{ steps.output-info.outputs.res-file }}
+    description: |-
+      File containing a JSON object with information about performed test.
+
   test-info:
     value: ${{ steps.output-info.outputs.res }}
     description: |-
@@ -168,14 +173,16 @@ runs:
       if: always()
       shell: bash
       run: |
-        if [[ -z "${{ steps.output-id.outputs.res }}" ]]; then
-          echo "res='{}'" >> "$GITHUB_OUTPUT"
-          exit 0
-        fi
+        RES_FILE="${{ steps.make-artifacts-dir.outputs.res }}/test-info.json"
+        echo "{}" > "$RES_FILE"
+        echo "res-file=$RES_FILE" >> "$GITHUB_OUTPUT"
 
+        if [[ -n "${{ steps.output-id.outputs.res }}" ]]; then
+          yc loadtesting test get "${{ steps.output-id.outputs.res }}" --format json > "$RES_FILE"
+        fi
         {
           echo 'res<<EOF'
-          yc loadtesting test get "${{ steps.output-id.outputs.res }}" --format json
+          cat "$RES_FILE"
           echo 'EOF'
         } >> "$GITHUB_OUTPUT"
 

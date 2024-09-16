@@ -44,6 +44,7 @@ A list of directories containing `test-config.yaml` test configuration files sho
 |Output|Description|
 |------|-----------|
 |`test-ids`|IDs of performed tests.|
+|`test-infos-file`|File containing a JSON array of objects with information about performed tests.|
 |`test-infos`|JSON array of objects with information about performed tests.|
 |`execution-report-file`|Path to generated .md execution report file.|
 |`checks-report-file`|Path to generated .md checks report file.|
@@ -257,6 +258,7 @@ A directory containing `test-config.yaml` test configuration file should be prov
 |Output|Description|
 |------|-----------|
 |`test-id`|ID of performed test.|
+|`test-info-file`|File containing a JSON object with information about performed test.|
 |`test-info`|JSON object with information about performed test.|
 |`report-file`|Path to generated .md report file.|
 |`artifacts-dir`|Action artifacts directory. If needed, save it using actions/upload_artifacts.|

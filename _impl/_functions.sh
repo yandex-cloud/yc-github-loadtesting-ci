@@ -160,13 +160,13 @@ function _log_outs() {
         local _level=0
     fi
 
-    if [[ -n "$YC_SECRET_OUTPUT" ]]; then
-        _stdout='***SECRET***'
-    fi
-
     _logv "$_level" "Command $1 finished with status $_rc:"
     _logv "$_level" "  stderr: $_stderr"
-    _logv "$_level" "  stdout: $_stdout"
+    if [[ -n "$YC_SECRET_OUTPUT" ]]; then
+        _logv "$_level" "  stdout: ***SECRET***"
+    else
+        _logv "$_level" "  stdout: $_stdout"
+    fi
 
     printf '%s' "$_stdout" 2>/dev/null
     return ${_rc}
@@ -229,7 +229,7 @@ function yc_s3_upload {
 
     local -r token=${VAR_TOKEN:-$(yc_get_token)}
     local -r auth_h="X-YaCloud-SubjectToken: $token"
-    curl -L -H "$auth_h" --upload-file - "$VAR_OBJECT_STORAGE_URL/$bucket/$bucket_path" \
+    curl --fail -L -H "$auth_h" --upload-file - "$VAR_OBJECT_STORAGE_URL/$bucket/$bucket_path" \
         2>/dev/null \
         <"$file"
 
@@ -247,7 +247,7 @@ function yc_s3_delete {
 
     local -r token=${VAR_TOKEN:-$(yc_get_token)}
     local -r auth_h="X-YaCloud-SubjectToken: $token"
-    curl -L -H "$auth_h" -X DELETE "$VAR_OBJECT_STORAGE_URL/$bucket/$bucket_path" \
+    curl --fail -L -H "$auth_h" -X DELETE "$VAR_OBJECT_STORAGE_URL/$bucket/$bucket_path" \
         2>/dev/null
 
     return $?
