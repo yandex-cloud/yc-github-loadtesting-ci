@@ -190,7 +190,7 @@ runs:
       run: |
         RES_FILE="${{ steps.make-artifacts-dir.outputs.res }}/test-infos.json"
         echo "[]" > "$RES_FILE"
-        echo "res-file=$RES_FILE"
+        echo "res-file=$RES_FILE" >> "$GITHUB_OUTPUT"
 
         if [[ -n "${{ steps.output-ids.outputs.res }}" ]]; then
           _ARGS=()
