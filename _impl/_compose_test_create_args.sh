@@ -187,7 +187,4 @@ if [[ -n ${_artifacts_bucket} ]]; then
     _ARGS+=(--artifacts-output-bucket "${_artifacts_bucket}")
 fi
 
-(
-    IFS=$'\t'
-    echo "${ARGS[*]}"
-)
+printf '%s\0' "${ARGS[@]}"

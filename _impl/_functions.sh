@@ -160,13 +160,13 @@ function _log_outs() {
         local _level=0
     fi
 
-    if [[ -n "$YC_SECRET_OUTPUT" ]]; then
-        _stdout='***SECRET***'
-    fi
-
     _logv "$_level" "Command $1 finished with status $_rc:"
     _logv "$_level" "  stderr: $_stderr"
-    _logv "$_level" "  stdout: $_stdout"
+    if [[ -n "$YC_SECRET_OUTPUT" ]]; then
+        _logv "$_level" "  stdout: ***SECRET***"
+    else
+        _logv "$_level" "  stdout: $_stdout"
+    fi
 
     printf '%s' "$_stdout" 2>/dev/null
     return ${_rc}

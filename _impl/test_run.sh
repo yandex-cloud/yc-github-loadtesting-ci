@@ -194,14 +194,18 @@ if [[ -n $VAR_ARTIFACTS_BUCKET ]]; then
     _composer_args+=(--artifacts-bucket "${VAR_ARTIFACTS_BUCKET}")
 fi
 
-if ! _composer_output=$(run_script "$_SCRIPT_DIR/_compose_test_create_args.sh" "${_composer_args[@]}"); then
-    _log "Failed: output=$_composer_output"
-fi
+function _call_composer() {
+    if ! run_script "$_SCRIPT_DIR/_compose_test_create_args.sh" "${_composer_args[@]}"; then
+        _log "Failed to compose arguments"
+    fi
+}
 
+_logv 1 "Composer arguments:"
 _test_create_args=()
-IFS=$'\t' read -d '' -ra _test_create_args <<<"$_composer_output" || true
-
-_logv 1 "Composed: ${_test_create_args[*]}"
+while IFS= read -d '' -r _arg; do
+    _logv 1 "  arg: $_arg"
+    _test_create_args+=("$_arg")
+done < <(_call_composer)
 
 # ---------------------------------------------------------------------------- #
 #                                 Run the test                                 #
