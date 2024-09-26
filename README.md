@@ -1,5 +1,9 @@
 # GitHub Actions for Yandex Cloud Load Testing service
 
+[USAGE EXAMPLE](.github/workflows/example.yml)
+
+[USAGE EXAMPLE WORKFLOW](https://github.com/yandex-cloud/yc-github-loadtesting-ci/actions/workflows/example.yml)
+
 **NOTE**: All actions require `auth-key-json` to authorize requests to Yandex Cloud services. Please check <a href="https://yandex.cloud/en/docs/iam/operations/authorized-key/create#cli_1" target="_blank">this documentation page</a> for instructions how to create one.
 
 ## Short reference
